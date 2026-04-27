@@ -10,6 +10,6 @@ Repository = "https://github.com/AISeDam/ComfyUI_RP_Cast"
 Issues = "https://github.com/AISeDam/ComfyUI_RP_Cast/issues"
 
 [tool.comfy]
-PublisherId = "AISeDam"
+PublisherId = "aisedam"
 DisplayName = "ComfyUI_RP_Cast"
 Icon = ""
