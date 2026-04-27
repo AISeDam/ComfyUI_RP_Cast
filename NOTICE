@@ -1,0 +1,142 @@
+ComfyUI_RP_Cast
+Copyright (C) 2024-2026  ComfyUI_RP_Cast Contributors
+
+Repository: https://github.com/AISeDam/ComfyUI_RP_Cast
+
+This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+See the LICENSE file for details.
+
+================================================================================
+THIRD-PARTY NOTICES
+================================================================================
+
+This project references, adapts, or is inspired by the following open source
+projects. No source code was directly copied; algorithms, patterns, and
+interfaces were re-implemented for the ComfyUI environment.
+
+--------------------------------------------------------------------------------
+1. sd-webui-regional-prompter
+--------------------------------------------------------------------------------
+  Repository : https://github.com/hako-mikan/sd-webui-regional-prompter
+  Author     : hako-mikan
+  License    : GNU Affero General Public License v3.0 (AGPL-3.0)
+  Copyright  : Copyright (c) 2023 hako-mikan
+
+  Usage in this project:
+  - Core concept: region-based prompt division (ADDCOMM / ADDBASE / ADDCOL /
+    ADDROW keyword structure)
+  - divide_ratio / divide_mode specification
+  - use_base / use_common flag semantics
+  - Latent couple algorithm concept (regional attention masking)
+  - parse_prompt() structure and _common / _base_part / _col_parts variable
+    mapping conventions
+  - README used as the authoritative standard for prompt parsing behavior
+
+--------------------------------------------------------------------------------
+2. ComfyUI-Impact-Pack
+--------------------------------------------------------------------------------
+  Repository : https://github.com/ltdrdata/ComfyUI-Impact-Pack
+  Author     : ltdrdata (Dr.Lt.Data)
+  License    : GNU Affero General Public License v3.0 (AGPL-3.0)
+
+  Usage in this project:
+  - drop_size parameter concept: bbox short-side threshold for filtering
+    small detections (used in RPRegionalDetailer, RPRegionalDetailerZImage)
+  - FaceDetailer upscale-then-inpaint pattern reference
+  - torch.load patch interoperability awareness (impact-subpack compatibility)
+
+--------------------------------------------------------------------------------
+3. ComfyUI-ZImagePowerNodes
+--------------------------------------------------------------------------------
+  Repository : https://github.com/martin-rizzo/ComfyUI-ZImagePowerNodes
+  Author     : martin-rizzo (Martin Rizzo)
+  License    : MIT License
+  Copyright  : Copyright (c) 2026 Martin Rizzo
+
+  Usage in this project:
+  - ZSampler Turbo implementation reference: AuraFlow sigma schedule
+    (ModelSamplingDiscreteFlow + CONST combination pattern)
+  - Z-Image latent channel count (_ZIMAGE_LATENT_CHANNELS = 16)
+  - Z-Image latent block size (_ZIMAGE_LATENT_BLOCK = 8)
+  - Z-Image grid size (_ZIMAGE_GRID_SIZE = 32)
+  - EmptyZImageLatentImage generation pattern
+
+--------------------------------------------------------------------------------
+4. ComfyUI-WD14-Tagger
+--------------------------------------------------------------------------------
+  Repository : https://github.com/pythongosssss/ComfyUI-WD14-Tagger
+  Author     : pythongosssss
+  License    : MIT License
+
+  Usage in this project:
+  - Model cache directory path convention shared:
+    custom_nodes/ComfyUI-WD14-Tagger/models/
+  - WD14 ONNX model loading pattern for gender classification in
+    RPRegionalDetailerZImage._parse_gender()
+  - selected_tags.csv format reference for Danbooru tag parsing
+
+================================================================================
+DEPENDENCY NOTICES
+================================================================================
+
+This project depends on the following packages at runtime:
+
+  - ComfyUI          : https://github.com/comfyanonymous/ComfyUI
+                       GNU General Public License v3.0
+                       Used in: all nodes
+                       Scope: core runtime — model_management (device/memory),
+                         sample (KSampler execution), samplers (SAMPLERS/
+                         SCHEDULERS constants), model_sampling (AuraFlow sigma
+                         shift), sd (LoRA load/patch), utils (weight copy).
+
+  - PyTorch          : https://github.com/pytorch/pytorch
+                       BSD License
+                       Used in: all nodes
+                       Scope: tensor operations throughout — latent generation,
+                         mask construction, conditioning encode/decode,
+                         denoised callback blending.
+
+  - Ultralytics YOLO : https://github.com/ultralytics/ultralytics
+                       GNU Affero General Public License v3.0 (AGPL-3.0)
+                       Used in: node_rp_detailer.py, node_rp_detailer_zimage.py
+                       Scope: person detection (classes=[0]) on the full image
+                         to obtain bbox coordinates for regional inpainting.
+                       Optional — required only for Detailer nodes.
+
+  - OpenCV (cv2)     : https://github.com/opencv/opencv
+                       Apache License 2.0
+                       Used in: node_rp_detailer.py, node_rp_detailer_zimage.py
+                       Scope: bbox mask post-processing — dilate (mask
+                         expansion), GaussianBlur (mask_blur / feather).
+                       Optional — required only for Detailer nodes.
+
+  - Pillow (PIL)     : https://github.com/python-pillow/Pillow
+                       HPND License
+                       Used in: node_rp_detailer.py, node_rp_detailer_zimage.py
+                       Scope: image conversion in Detailer nodes — fromarray
+                         (numpy→PIL for YOLO input), crop (bbox extraction),
+                         resize/LANCZOS (upscale before VAE encode, WD14
+                         input preparation at 448×448).
+                       Optional — required only for Detailer nodes.
+
+  - onnxruntime      : https://github.com/microsoft/onnxruntime
+                       MIT License
+                       Used in: node_rp_detailer_zimage.py
+                       Scope: WD14 ONNX model inference for gender
+                         classification (boy/girl score) per detected bbox.
+                       Optional — required only for Z-Image Detailer gender
+                         classification feature.
+
+================================================================================
+DISTRIBUTION NOTE
+================================================================================
+
+As this project is licensed under AGPL-3.0 and references AGPL-3.0 works,
+any distribution or network deployment of modified versions must:
+
+  1. Make the complete corresponding source code available under AGPL-3.0
+  2. Preserve all copyright notices from this NOTICE file
+  3. Provide a copy of the AGPL-3.0 license (see LICENSE file)
+
+For commercial use without source disclosure, a separate license agreement
+with the respective original authors would be required.

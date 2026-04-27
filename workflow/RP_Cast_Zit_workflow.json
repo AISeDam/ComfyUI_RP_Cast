@@ -1,0 +1,902 @@
+{
+  "id": "26fdeb92-33be-4517-ab6d-65f07446055a",
+  "revision": 0,
+  "last_node_id": 14,
+  "last_link_id": 30,
+  "nodes": [
+    {
+      "id": 2,
+      "type": "VAELoader",
+      "pos": [
+        804.3144303737708,
+        2157.2283176649435
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            8,
+            16
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.17.0",
+        "Node name for S&R": "VAELoader",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "ae.safetensors"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "CLIPTextEncode",
+      "pos": [
+        326.331063222882,
+        2402.4468474214013
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            11,
+            20
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.17.0",
+        "Node name for S&R": "CLIPTextEncode",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "censored, skin blemish,  bad anatomy, dismembered, disembodied, elderly, wrinkles, cross-eyed, deformed,  deformed fingers, short legs, body diproportion. dark scene, , disfigured, kitsch, ugly, grain, low-res, poorly drawn face, mutation, mutated, extra limb, poorly drawn hands, missing limb, blurry, floating limbs, disconnected limbs, malformed hands, blur, out of focus, long neck, long body, disgusting, poorly drawn, childish, mutilated, mangled, old, surreal, double body, double face, incorrect posture, close up, two heads, two faces, plastic, Deformed, blurry, bad anatomy, bad eyes, crossed eyes, disfigured, poorly drawn face, mutation, mutated, blender, doll, cropped, low-res, close-up, poorly-drawn face, out of frame double, two heads, blurred, ugly, disfigured, too many fingers, deformed, repetitive, text, watermark,glossy, shiny, sweaty, glowing"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "FluxResolutionNode",
+      "pos": [
+        813.9956728452053,
+        2445.0863515361857
+      ],
+      "size": [
+        272.54838658779533,
+        112.58696861963944
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            22
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            23
+          ]
+        },
+        {
+          "name": "aspect_ratio",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "title": "해상도선택기",
+      "properties": {
+        "cnr_id": "image-size-tools",
+        "ver": "0.3.4",
+        "Node name for S&R": "FluxResolutionNode",
+        "ue_properties": {
+          "widget_ue_connectable": {
+            "resolution": true
+          },
+          "version": "7.5.2",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "1080×1920 (9:16) - Vertical HD"
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 6,
+      "type": "RPRatioParser",
+      "pos": [
+        796.9953308012496,
+        1788.7495258207102
+      ],
+      "size": [
+        285.076171875,
+        182
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "divide_ratio",
+          "type": "RP_DIV_RATIO",
+          "link": 2
+        },
+        {
+          "name": "divide_mode",
+          "type": "RP_DIV_MODE",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "regional_col_n_row",
+          "type": "RP_REGIONS",
+          "links": [
+            18
+          ]
+        },
+        {
+          "name": "threshold_out",
+          "type": "RP_THRESHOLD",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RPRatioParser",
+        "cnr_id": "comfyui-workflow-encrypt",
+        "ver": "1.0.0",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "0.5"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "SaveImage",
+      "pos": [
+        1797.1457418373548,
+        1795.8313004058548
+      ],
+      "size": [
+        557.2280545592243,
+        785.2986146675485
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 4
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.11.1",
+        "Node name for S&R": "SaveImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        }
+      },
+      "widgets_values": [
+        "%date:yyyy-MM-dd%\\comfyui_%date:yyyy-MM-dd%"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "UNETLoader",
+      "pos": [
+        803.5529530167073,
+        2024.1051862585575
+      ],
+      "size": [
+        270,
+        82
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            26
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.17.0",
+        "Node name for S&R": "UNETLoader",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "Zit\\AISeDamZITMIX_v1.0.safetensors",
+        "default"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "CLIPLoader",
+      "pos": [
+        807.1063744332523,
+        2272.203839310378
+      ],
+      "size": [
+        270,
+        106
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            1,
+            15,
+            28
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.17.0",
+        "Node name for S&R": "CLIPLoader",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "qwen_3_4b.safetensors",
+        "lumina2",
+        "default"
+      ]
+    },
+    {
+      "id": 10,
+      "type": "RPPromptParser",
+      "pos": [
+        309.67124548210154,
+        1793.480845820992
+      ],
+      "size": [
+        464.9536484984533,
+        560
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "regional_prompts_nolora",
+          "type": "RP_SUBPROMPTS",
+          "links": [
+            9,
+            17
+          ]
+        },
+        {
+          "name": "regional_lora_map",
+          "type": "RP_LORA_MAP",
+          "links": [
+            10,
+            19
+          ]
+        },
+        {
+          "name": "divide_ratio",
+          "type": "RP_DIV_RATIO",
+          "links": [
+            2,
+            13
+          ]
+        },
+        {
+          "name": "divide_mode",
+          "type": "RP_DIV_MODE",
+          "links": [
+            3,
+            12,
+            21
+          ]
+        },
+        {
+          "name": "original_prompts",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RPPromptParser",
+        "cnr_id": "comfyui-workflow-encrypt",
+        "ver": "1.0.0",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "in the cafe, group enjoy tea time, 1boy and 2girls,\nADDCOMM\nShot on Kodak Portra 800, film grain 35mm, IMG_2985.HEIC, hyper-realistic, 8k, halation, pure-desire vibe, 00's analog film aesthetic, 35mm lens amateur photograph style, depth of field, ultra detailed textures, cinematic lighting, ray tracing reflections,diffused color,\nADDBASE\n1boy, black hair, brown eyes, short hair, white shirt, dark pants\nADDCOL\n1girl, blue eyes, blonde hair, short hair, white one-piece, jewelry, necklace\n<lora:Zit/face/mymuse56:1>\nADDCOL\n1girl, brown hair, white loose shirts,blue pants\n<lora:Zit/face/mymuse57:1>\n",
+        "Horizontal",
+        "1,1,1",
+        "auto",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "id": 11,
+      "type": "RPKSamplerZImage",
+      "pos": [
+        1119.5385463264597,
+        1792.9382059801985
+      ],
+      "size": [
+        288.32421875,
+        462
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 27
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 15
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 16
+        },
+        {
+          "name": "regional_prompts_nolora",
+          "type": "RP_SUBPROMPTS",
+          "link": 17
+        },
+        {
+          "name": "regional_col_n_row",
+          "type": "RP_REGIONS",
+          "link": 18
+        },
+        {
+          "name": "regional_lora_map",
+          "type": "RP_LORA_MAP",
+          "link": 19
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 20
+        },
+        {
+          "name": "divide_mode",
+          "shape": 7,
+          "type": "RP_DIV_MODE",
+          "link": 21
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": 22
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": 23
+        }
+      ],
+      "outputs": [
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            5
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RPKSamplerZImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        768,
+        1024,
+        246750515215851,
+        "randomize",
+        8,
+        1,
+        "res_3m",
+        "simple",
+        3,
+        1,
+        10,
+        false
+      ]
+    },
+    {
+      "id": 9,
+      "type": "RPRegionalDetailerZImage",
+      "pos": [
+        1437.9730184870796,
+        1796.6068120465618
+      ],
+      "size": [
+        321.3046875,
+        698
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 5
+        },
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 30
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 29
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 8
+        },
+        {
+          "name": "regional_prompts_nolora",
+          "type": "RP_SUBPROMPTS",
+          "link": 9
+        },
+        {
+          "name": "regional_lora_map",
+          "type": "RP_LORA_MAP",
+          "link": 10
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 11
+        },
+        {
+          "name": "divide_mode",
+          "shape": 7,
+          "type": "RP_DIV_MODE",
+          "link": 12
+        },
+        {
+          "name": "divide_ratio",
+          "shape": 7,
+          "type": "RP_DIV_RATIO",
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "debug_image",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RPRegionalDetailerZImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        994496959885470,
+        "randomize",
+        8,
+        1,
+        "res_2s",
+        "simple",
+        0.4,
+        5,
+        "bbox/face_yolov8m.pt",
+        0.3,
+        3,
+        "bbox/face_yolov8m.pt",
+        0.3,
+        10,
+        32,
+        20,
+        10,
+        1024,
+        true,
+        true,
+        false
+      ]
+    },
+    {
+      "id": 14,
+      "type": "Lora Loader Stack (rgthree)",
+      "pos": [
+        1112.5837042625128,
+        2299.405337023756
+      ],
+      "size": [
+        282.542578125,
+        246
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 26
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 28
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            27,
+            30
+          ]
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            29
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "rgthree-comfy",
+        "ver": "8ff50e4521881eca1fe26aec9615fc9362474931",
+        "Node name for S&R": "Lora Loader Stack (rgthree)",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "Zit\\detail\\aesthetic_exp1.safetensors",
+        0.5,
+        "None",
+        1,
+        "None",
+        1,
+        "None",
+        1
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      3,
+      0,
+      4,
+      0,
+      "CLIP"
+    ],
+    [
+      2,
+      10,
+      2,
+      6,
+      0,
+      "STRING"
+    ],
+    [
+      3,
+      10,
+      3,
+      6,
+      1,
+      "STRING"
+    ],
+    [
+      4,
+      9,
+      0,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      5,
+      11,
+      1,
+      9,
+      0,
+      "IMAGE"
+    ],
+    [
+      8,
+      2,
+      0,
+      9,
+      3,
+      "VAE"
+    ],
+    [
+      9,
+      10,
+      0,
+      9,
+      4,
+      "RP_SUBPROMPTS"
+    ],
+    [
+      10,
+      10,
+      1,
+      9,
+      5,
+      "RP_LORA_MAP"
+    ],
+    [
+      11,
+      4,
+      0,
+      9,
+      6,
+      "CONDITIONING"
+    ],
+    [
+      12,
+      10,
+      3,
+      9,
+      7,
+      "STRING"
+    ],
+    [
+      13,
+      10,
+      2,
+      9,
+      8,
+      "STRING"
+    ],
+    [
+      15,
+      3,
+      0,
+      11,
+      1,
+      "CLIP"
+    ],
+    [
+      16,
+      2,
+      0,
+      11,
+      2,
+      "VAE"
+    ],
+    [
+      17,
+      10,
+      0,
+      11,
+      3,
+      "RP_SUBPROMPTS"
+    ],
+    [
+      18,
+      6,
+      0,
+      11,
+      4,
+      "RP_REGIONS"
+    ],
+    [
+      19,
+      10,
+      1,
+      11,
+      5,
+      "RP_LORA_MAP"
+    ],
+    [
+      20,
+      4,
+      0,
+      11,
+      6,
+      "CONDITIONING"
+    ],
+    [
+      21,
+      10,
+      3,
+      11,
+      7,
+      "STRING"
+    ],
+    [
+      22,
+      5,
+      0,
+      11,
+      8,
+      "INT"
+    ],
+    [
+      23,
+      5,
+      1,
+      11,
+      9,
+      "INT"
+    ],
+    [
+      26,
+      7,
+      0,
+      14,
+      0,
+      "MODEL"
+    ],
+    [
+      27,
+      14,
+      0,
+      11,
+      0,
+      "MODEL"
+    ],
+    [
+      28,
+      3,
+      0,
+      14,
+      1,
+      "CLIP"
+    ],
+    [
+      29,
+      14,
+      1,
+      9,
+      2,
+      "CLIP"
+    ],
+    [
+      30,
+      14,
+      0,
+      9,
+      1,
+      "MODEL"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "workflowRendererVersion": "LG",
+    "ue_links": [],
+    "ds": {
+      "scale": 0.5730855330117046,
+      "offset": [
+        384.38774217112723,
+        -1437.553342795832
+      ]
+    },
+    "links_added_by_ue": [],
+    "frontendVersion": "1.41.20",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
+}

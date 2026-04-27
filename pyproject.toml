@@ -1,0 +1,15 @@
+[project]
+name = "ComfyUI_RP_Cast"
+description = "Regional Prompter for ComfyUI — per-region prompt control with LoRA, Z-Image (AuraFlow), and Qwen VL support"
+version = "0.5.40"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+
+[project.urls]
+Repository = "https://github.com/AISeDam/ComfyUI_RP_Cast"
+Issues = "https://github.com/AISeDam/ComfyUI_RP_Cast/issues"
+
+[tool.comfy]
+PublisherId = "AISeDam"
+DisplayName = "ComfyUI_RP_Cast"
+Icon = ""
