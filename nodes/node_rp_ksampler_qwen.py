@@ -422,15 +422,25 @@ class RPKSamplerQwen:
             import torch as _t
             image = _t.zeros(1, h * _latent_block, w * _latent_block, 3)
 
-        # Release references
+        # Release model reference (prevent circular ref / memory leak)
         try:
-            if hasattr(sample_model, "patches"):
+            if hasattr(sample_model, 'patches'):
                 sample_model.patches.clear()
+            if hasattr(sample_model, 'object_patches'):
+                sample_model.object_patches.clear()
+            if hasattr(sample_model, 'object_patches_backup'):
+                sample_model.object_patches_backup.clear()
             del sample_model
         except Exception:
             pass
         try:
             if _cloned and model_shifted is not model:
+                if hasattr(model_shifted, 'patches'):
+                    model_shifted.patches.clear()
+                if hasattr(model_shifted, 'object_patches'):
+                    model_shifted.object_patches.clear()
+                if hasattr(model_shifted, 'object_patches_backup'):
+                    model_shifted.object_patches_backup.clear()
                 del model_shifted
         except Exception:
             pass

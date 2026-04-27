@@ -175,7 +175,7 @@ class RPRegionalDetailerQwen:
         zi_detailer = RPRegionalDetailerZImage()
         _dbg(f"[RPRegionalDetailerQwen] → delegating to RPRegionalDetailerZImage (Qwen compat)")
 
-        return zi_detailer.execute(
+        result = zi_detailer.execute(
             image=_image, model=model, clip=clip, vae=vae,
             regional_prompts_nolora=regional_prompts_nolora,
             regional_lora_map=regional_lora_map,
@@ -191,5 +191,7 @@ class RPRegionalDetailerQwen:
             divide_mode=divide_mode, divide_ratio=divide_ratio,
             debug=debug,
         )
+        del zi_detailer
+        return result
 
 

@@ -883,17 +883,28 @@ class RPRegionalDetailerZImage:
             # Release model reference used for sampling
             try:
                 if sample_model is not model_shifted:
-                    if hasattr(sample_model, "patches"):
+                    if hasattr(sample_model, 'patches'):
                         sample_model.patches.clear()
+                    if hasattr(sample_model, 'object_patches'):
+                        sample_model.object_patches.clear()
+                    if hasattr(sample_model, 'object_patches_backup'):
+                        sample_model.object_patches_backup.clear()
                     del sample_model
                 del latent_crop, out_lat, positive_cond
                 del inpaint_img, inpaint_t, inpaint_np, inpaint_down
             except Exception:
                 pass
 
-        # Release model_shifted reference (prevent circular ref)
+        # Release model_shifted reference (prevent circular ref / memory leak)
         try:
             if _cloned and model_shifted is not model:
+                # Clear all patches to break circular references
+                if hasattr(model_shifted, 'patches'):
+                    model_shifted.patches.clear()
+                if hasattr(model_shifted, 'object_patches'):
+                    model_shifted.object_patches.clear()
+                if hasattr(model_shifted, 'object_patches_backup'):
+                    model_shifted.object_patches_backup.clear()
                 del model_shifted
         except Exception:
             pass
