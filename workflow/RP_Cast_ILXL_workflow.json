@@ -1,0 +1,1867 @@
+{
+  "id": "553d3235-d31d-4933-94d6-3c855af420e0",
+  "revision": 0,
+  "last_node_id": 40,
+  "last_link_id": 59434,
+  "nodes": [
+    {
+      "id": 3,
+      "type": "CLIPSetLastLayer",
+      "pos": [
+        4655.143852886258,
+        4802.390859861316
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            25
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.17.0",
+        "Node name for S&R": "CLIPSetLastLayer",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        -2
+      ]
+    },
+    {
+      "id": 7,
+      "type": "Upscale Model Loader",
+      "pos": [
+        5283.434688783022,
+        3894.317403121313
+      ],
+      "size": [
+        270,
+        78
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "UPSCALE_MODEL",
+          "type": "UPSCALE_MODEL",
+          "links": [
+            13
+          ]
+        },
+        {
+          "name": "MODEL_NAME_TEXT",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "was-node-suite-comfyui",
+        "ver": "ea935d1044ae5a26efa54ebeb18fe9020af49a45",
+        "Node name for S&R": "Upscale Model Loader",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "4x-UltraSharp.pth"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "CLIPTextEncode",
+      "pos": [
+        4223.373150754,
+        4524.338696673036
+      ],
+      "size": [
+        400,
+        296
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": null
+        },
+        {
+          "name": "text",
+          "type": "STRING",
+          "widget": {
+            "name": "text"
+          },
+          "link": 14
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            12
+          ]
+        }
+      ],
+      "title": "CLIP 텍스트 인코딩 (Positive 프롬프트)",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.17.0",
+        "Node name for S&R": "CLIPTextEncode",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        ""
+      ]
+    },
+    {
+      "id": 9,
+      "type": "CLIPTextEncode",
+      "pos": [
+        4220.10398865069,
+        4778.065272895852
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            10
+          ]
+        }
+      ],
+      "title": "CLIP 텍스트 인코딩 (Negative 프롬프트)",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.17.0",
+        "Node name for S&R": "CLIPTextEncode",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "censored, skin blemish,  bad anatomy, dismembered, disembodied, elderly, wrinkles, cross-eyed, deformed,  deformed fingers, short legs, body diproportion. dark scene, , disfigured, kitsch, ugly, grain, low-res, poorly drawn face, mutation, mutated, extra limb, poorly drawn hands, missing limb, blurry, floating limbs, disconnected limbs, malformed hands, blur, out of focus, long neck, long body, disgusting, poorly drawn, childish, mutilated, mangled, old, surreal, double body, double face, incorrect posture, close up, two heads, two faces, plastic, Deformed, blurry, bad anatomy, bad eyes, crossed eyes, disfigured, poorly drawn face, mutation, mutated, blender, doll, cropped, low-res, close-up, poorly-drawn face, out of frame double, two heads, blurred, ugly, disfigured, too many fingers, deformed, repetitive, text, watermark,glossy, shiny, sweaty, glowing"
+      ]
+    },
+    {
+      "id": 11,
+      "type": "UltralyticsDetectorProvider",
+      "pos": [
+        5150.338289367479,
+        5273.902786429542
+      ],
+      "size": [
+        219.0767578125,
+        83.33333333333334
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "BBOX_DETECTOR",
+          "type": "BBOX_DETECTOR",
+          "links": [
+            19
+          ]
+        },
+        {
+          "name": "SEGM_DETECTOR",
+          "type": "SEGM_DETECTOR",
+          "links": [
+            21
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-impact-subpack",
+        "ver": "1.3.2",
+        "Node name for S&R": "UltralyticsDetectorProvider",
+        "ue_properties": {
+          "version": "7.5.1",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "bbox/hand_yolov8s.pt"
+      ]
+    },
+    {
+      "id": 15,
+      "type": "SAMLoader",
+      "pos": [
+        5150.433526017691,
+        5420.102219282872
+      ],
+      "size": [
+        210,
+        91.66666666666667
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "SAM_MODEL",
+          "type": "SAM_MODEL",
+          "links": [
+            20
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-impact-pack",
+        "ver": "cd34cfdd638a996fd011be1b490c70a7e0fb505f",
+        "Node name for S&R": "SAMLoader",
+        "ue_properties": {
+          "version": "7.5.1",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "sam_vit_b_01ec64.pth",
+        "Prefer GPU"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "Anything Everywhere",
+      "pos": [
+        4693.286519043306,
+        3886.8317229284535
+      ],
+      "size": [
+        181.3697265625,
+        246
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "color_on": "",
+          "label": "RP_LORA_MAP",
+          "name": "anything21",
+          "type": "RP_LORA_MAP",
+          "link": 30
+        },
+        {
+          "color_on": "",
+          "label": "RP_DIV_RATIO",
+          "name": "anything22",
+          "type": "RP_DIV_RATIO",
+          "link": 32
+        },
+        {
+          "color_on": "",
+          "label": "RP_DIV_MODE",
+          "name": "anything23",
+          "type": "RP_DIV_MODE",
+          "link": 5
+        },
+        {
+          "color_on": "",
+          "label": "RP_REGIONS",
+          "name": "anything24",
+          "type": "RP_REGIONS",
+          "link": 6
+        },
+        {
+          "color_on": "#B39DDB",
+          "label": "MODEL",
+          "name": "anything25",
+          "type": "MODEL",
+          "link": 7
+        },
+        {
+          "color_on": "#FFD500",
+          "label": "CLIP",
+          "name": "anything26",
+          "type": "CLIP",
+          "link": 8
+        },
+        {
+          "color_on": "#FF6E6E",
+          "label": "VAE",
+          "name": "anything27",
+          "type": "VAE",
+          "link": 9
+        },
+        {
+          "color_on": "#FFA931",
+          "label": "CONDITIONING",
+          "name": "anything28",
+          "type": "CONDITIONING",
+          "link": 10
+        },
+        {
+          "color_on": "",
+          "label": "RP_SUBPROMPTS",
+          "name": "anything29",
+          "type": "RP_SUBPROMPTS",
+          "link": 28
+        },
+        {
+          "color_on": "",
+          "label": "RP_LORA_MAP",
+          "name": "anything30",
+          "type": "RP_LORA_MAP",
+          "link": null
+        },
+        {
+          "label": "anything",
+          "name": "anything86",
+          "type": "*",
+          "link": null
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfyui-workflow-encrypt",
+        "ver": "1.0.0",
+        "Node name for S&R": "Anything Everywhere",
+        "ue_properties": {
+          "version": "7.1",
+          "group_restricted": 0,
+          "color_restricted": 0,
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "title_regex": null,
+          "input_regex": null,
+          "group_regex": null,
+          "repeated_type_rule": 0,
+          "next_input_index": 86
+        }
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 10,
+      "type": "CLIPTextEncode",
+      "pos": [
+        4974.716321797831,
+        5012.052417791838
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            18
+          ]
+        }
+      ],
+      "title": "CLIP 텍스트 인코딩 (Hand Negative 프롬프트)",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.17.0",
+        "Node name for S&R": "CLIPTextEncode",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "embedding:SmoothNegative_Hands-neg, embedding:negative_hand-neg, "
+      ]
+    },
+    {
+      "id": 17,
+      "type": "SaveImage",
+      "pos": [
+        5918.049489149655,
+        4741.353001425722
+      ],
+      "size": [
+        557.2280545592243,
+        785.2986146675485
+      ],
+      "flags": {},
+      "order": 20,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 22
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.11.1",
+        "Node name for S&R": "SaveImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        }
+      },
+      "widgets_values": [
+        "%date:yyyy-MM-dd%\\comfyui_%date:yyyy-MM-dd%"
+      ]
+    },
+    {
+      "id": 27,
+      "type": "SaveImage",
+      "pos": [
+        6029.044790757474,
+        3955.345262721633
+      ],
+      "size": [
+        270,
+        270
+      ],
+      "flags": {},
+      "order": 19,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 55987
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.17.0",
+        "Node name for S&R": "SaveImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "%date:yyyy-MM-dd%\\debug_%date:yyyy-MM-dd%"
+      ]
+    },
+    {
+      "id": 16,
+      "type": "FaceDetailer",
+      "pos": [
+        5401.69894961758,
+        4739.320949392357
+      ],
+      "size": [
+        450,
+        1184
+      ],
+      "flags": {},
+      "order": 18,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 55986
+        },
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": null
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": null
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 17
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 18
+        },
+        {
+          "name": "bbox_detector",
+          "type": "BBOX_DETECTOR",
+          "link": 19
+        },
+        {
+          "name": "sam_model_opt",
+          "shape": 7,
+          "type": "SAM_MODEL",
+          "link": 20
+        },
+        {
+          "name": "segm_detector_opt",
+          "shape": 7,
+          "type": "SEGM_DETECTOR",
+          "link": 21
+        },
+        {
+          "name": "detailer_hook",
+          "shape": 7,
+          "type": "DETAILER_HOOK",
+          "link": null
+        },
+        {
+          "name": "scheduler_func_opt",
+          "shape": 7,
+          "type": "SCHEDULER_FUNC",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            22
+          ]
+        },
+        {
+          "name": "cropped_refined",
+          "shape": 6,
+          "type": "IMAGE",
+          "links": []
+        },
+        {
+          "name": "cropped_enhanced_alpha",
+          "shape": 6,
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null
+        },
+        {
+          "name": "detailer_pipe",
+          "type": "DETAILER_PIPE",
+          "links": null
+        },
+        {
+          "name": "cnet_images",
+          "shape": 6,
+          "type": "IMAGE",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-impact-pack",
+        "ver": "cd34cfdd638a996fd011be1b490c70a7e0fb505f",
+        "Node name for S&R": "FaceDetailer",
+        "ue_properties": {
+          "version": "7.5.1",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        512,
+        true,
+        1024,
+        811621218551679,
+        "randomize",
+        45,
+        8,
+        "euler_ancestral",
+        "karras",
+        0.5,
+        5,
+        true,
+        true,
+        0.1,
+        30,
+        3,
+        "center-1",
+        10,
+        0.93,
+        30,
+        0.7,
+        "False",
+        1,
+        "",
+        1,
+        false,
+        20,
+        false,
+        false
+      ]
+    },
+    {
+      "id": 4,
+      "type": "CheckpointLoaderSimple",
+      "pos": [
+        4651.503941379186,
+        4396.004578730101
+      ],
+      "size": [
+        270,
+        98
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            24
+          ]
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            1
+          ]
+        },
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.17.0",
+        "Node name for S&R": "CheckpointLoaderSimple",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "Illustrious\\oneObsession_v20Bold.safetensors"
+      ]
+    },
+    {
+      "id": 2,
+      "type": "VAELoader",
+      "pos": [
+        4656.367401921846,
+        4536.610603107644
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            9
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.17.0",
+        "Node name for S&R": "VAELoader",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "fixFP16ErrorsSDXLLowerMemoryUse_v10.safetensors"
+      ]
+    },
+    {
+      "id": 20,
+      "type": "Power Lora Loader (rgthree)",
+      "pos": [
+        4914.898624160681,
+        3894.63201291042
+      ],
+      "size": [
+        340.519921875,
+        214
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "dir": 3,
+          "name": "model",
+          "type": "MODEL",
+          "link": 24
+        },
+        {
+          "dir": 3,
+          "name": "clip",
+          "type": "CLIP",
+          "link": 25
+        }
+      ],
+      "outputs": [
+        {
+          "dir": 4,
+          "name": "MODEL",
+          "shape": 3,
+          "type": "MODEL",
+          "links": [
+            7
+          ]
+        },
+        {
+          "dir": 4,
+          "name": "CLIP",
+          "shape": 3,
+          "type": "CLIP",
+          "links": [
+            8
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "rgthree-comfy",
+        "ver": "8ff50e4521881eca1fe26aec9615fc9362474931",
+        "Show Strengths": "Single Strength",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        {},
+        {
+          "type": "PowerLoraLoaderHeaderWidget"
+        },
+        {
+          "on": true,
+          "lora": "Illustrious\\style\\lpc_v10.safetensors",
+          "strength": 0.25,
+          "strengthTwo": null
+        },
+        {
+          "on": false,
+          "lora": "Illustrious\\detailed hand focus style illustriousXL v1.1.safetensors",
+          "strength": 0.3,
+          "strengthTwo": null
+        },
+        {
+          "on": true,
+          "lora": "Illustrious\\style\\rimixxO2.safetensors",
+          "strength": 0.2,
+          "strengthTwo": null
+        },
+        {
+          "on": true,
+          "lora": "Illustrious\\style\\Hyperrealistic_illustrious.safetensors",
+          "strength": 0.1,
+          "strengthTwo": null
+        },
+        {},
+        ""
+      ]
+    },
+    {
+      "id": 29,
+      "type": "RPRegionalDetailer",
+      "pos": [
+        5584.5723822234595,
+        3898.334596908555
+      ],
+      "size": [
+        321.3046875,
+        698
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 55985
+        },
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": null
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": null
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "name": "regional_prompts_nolora",
+          "type": "RP_SUBPROMPTS",
+          "link": null
+        },
+        {
+          "name": "regional_lora_map",
+          "type": "RP_LORA_MAP",
+          "link": null
+        },
+        {
+          "name": "regional_col_n_row",
+          "type": "RP_REGIONS",
+          "link": null
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": null
+        },
+        {
+          "name": "divide_mode",
+          "type": "RP_DIV_MODE",
+          "link": null
+        },
+        {
+          "name": "divide_ratio",
+          "shape": 7,
+          "type": "RP_DIV_RATIO",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            55986
+          ]
+        },
+        {
+          "name": "debug_image",
+          "type": "IMAGE",
+          "links": [
+            55987
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RPRegionalDetailer",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.1",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        943135636507622,
+        "randomize",
+        30,
+        7,
+        "euler_ancestral",
+        "karras",
+        0.4,
+        10,
+        true,
+        true,
+        "bbox/face_yolov8m.pt",
+        0.25,
+        5,
+        64,
+        20,
+        10,
+        1024,
+        true,
+        true,
+        false
+      ]
+    },
+    {
+      "id": 6,
+      "type": "UltimateSDUpscale",
+      "pos": [
+        5279.176466260669,
+        4035.215604952833
+      ],
+      "size": [
+        277.859375,
+        638
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 56533
+        },
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": null
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 12
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": null
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "name": "upscale_model",
+          "type": "UPSCALE_MODEL",
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            55985
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui_ultimatesdupscale",
+        "ver": "1.7.1",
+        "Node name for S&R": "UltimateSDUpscale",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        2,
+        619232566369790,
+        "randomize",
+        15,
+        5,
+        "euler_ancestral",
+        "karras",
+        0.25,
+        "Linear",
+        1024,
+        1024,
+        10,
+        32,
+        "None",
+        1,
+        64,
+        8,
+        16,
+        true,
+        false,
+        1
+      ]
+    },
+    {
+      "id": 12,
+      "type": "CLIPTextEncode",
+      "pos": [
+        4991.898422263717,
+        4758.54510670422
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            17
+          ]
+        }
+      ],
+      "title": "CLIP 텍스트 인코딩 (Hand Positive 프롬프트)",
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.17.0",
+        "Node name for S&R": "CLIPTextEncode",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "ultra-detailed hand, ultra-detailed finger, "
+      ]
+    },
+    {
+      "id": 14,
+      "type": "EmptyLatentImage",
+      "pos": [
+        4659.5796625936455,
+        4646.353014608158
+      ],
+      "size": [
+        270,
+        106
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            56532
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.17.0",
+        "Node name for S&R": "EmptyLatentImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        1280,
+        768,
+        1
+      ]
+    },
+    {
+      "id": 18,
+      "type": "RPPromptParser",
+      "pos": [
+        4160.988746356034,
+        3901.993608274878
+      ],
+      "size": [
+        464.9536484984533,
+        560
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "regional_prompts_nolora",
+          "type": "RP_SUBPROMPTS",
+          "links": [
+            28
+          ]
+        },
+        {
+          "name": "regional_lora_map",
+          "type": "RP_LORA_MAP",
+          "links": [
+            30
+          ]
+        },
+        {
+          "name": "divide_ratio",
+          "type": "RP_DIV_RATIO",
+          "links": [
+            32
+          ]
+        },
+        {
+          "name": "divide_mode",
+          "type": "RP_DIV_MODE",
+          "links": [
+            5
+          ]
+        },
+        {
+          "name": "original_prompts",
+          "type": "STRING",
+          "links": [
+            14
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RPPromptParser",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "walking around close togther the village market, arm in arm, laughing\nADDCOMM\nultra detailed textures, cinematic lighting,\nADDBASE\nsubaru natsuki, natsuki subaru, 1boy, black hair, brown eyes, short hair, hair slicked back, white shirt, dark pants, isekai outfit\n<lora:Illustrious/subaru_natsuki_ilxl:1>\nADDCOL\nemilia, emilia (re:zero), crown braid, blunt bangs, long hair, white hair, purple eyes, slit pupils, blue pupils, pointy ears, x hair ornament, hair flower, white rose, medium breasts, white dress, corset, long sleeves, white collar, green gemstone, bare shoulders, cleavage, white skirt, white thighhighs\n<lora:ReZero_Emilia_IlluXL:1>\n",
+        "Horizontal",
+        "1,1",
+        "auto",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "id": 37,
+      "type": "RPKSampler",
+      "pos": [
+        4966.028748730452,
+        4170.864092934804
+      ],
+      "size": [
+        279.28125,
+        506
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": null
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": null
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "name": "regional_prompts_nolora",
+          "type": "RP_SUBPROMPTS",
+          "link": null
+        },
+        {
+          "name": "regional_col_n_row",
+          "type": "RP_REGIONS",
+          "link": null
+        },
+        {
+          "name": "regional_lora_map",
+          "type": "RP_LORA_MAP",
+          "link": null
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": null
+        },
+        {
+          "name": "threshold",
+          "type": "RP_THRESHOLD",
+          "link": 56531
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 56532
+        },
+        {
+          "name": "divide_mode",
+          "shape": 7,
+          "type": "RP_DIV_MODE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            56533
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RPKSampler",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "version": "7.1",
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        194617560968550,
+        "randomize",
+        25,
+        7,
+        "euler_ancestral",
+        "karras",
+        1,
+        "0.3",
+        10,
+        "0.5",
+        10,
+        true
+      ]
+    },
+    {
+      "id": 21,
+      "type": "RPRatioParser",
+      "pos": [
+        4649.048302349324,
+        4168.131811263411
+      ],
+      "size": [
+        285.076171875,
+        182
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "divide_ratio",
+          "type": "RP_DIV_RATIO",
+          "link": null
+        },
+        {
+          "name": "divide_mode",
+          "type": "RP_DIV_MODE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "regional_col_n_row",
+          "type": "RP_REGIONS",
+          "links": [
+            6
+          ]
+        },
+        {
+          "name": "threshold_out",
+          "type": "RP_THRESHOLD",
+          "links": [
+            56531
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RPRatioParser",
+        "cnr_id": "comfyui-workflow-encrypt",
+        "ver": "1.0.0",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "0.3",
+        null
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      4,
+      1,
+      3,
+      0,
+      "CLIP"
+    ],
+    [
+      5,
+      18,
+      3,
+      5,
+      2,
+      "RP_DIV_MODE"
+    ],
+    [
+      6,
+      21,
+      0,
+      5,
+      3,
+      "RP_REGIONS"
+    ],
+    [
+      7,
+      20,
+      0,
+      5,
+      4,
+      "MODEL"
+    ],
+    [
+      8,
+      20,
+      1,
+      5,
+      5,
+      "CLIP"
+    ],
+    [
+      9,
+      2,
+      0,
+      5,
+      6,
+      "VAE"
+    ],
+    [
+      10,
+      9,
+      0,
+      5,
+      7,
+      "CONDITIONING"
+    ],
+    [
+      12,
+      8,
+      0,
+      6,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      13,
+      7,
+      0,
+      6,
+      5,
+      "UPSCALE_MODEL"
+    ],
+    [
+      14,
+      18,
+      4,
+      8,
+      1,
+      "STRING"
+    ],
+    [
+      17,
+      12,
+      0,
+      16,
+      4,
+      "CONDITIONING"
+    ],
+    [
+      18,
+      10,
+      0,
+      16,
+      5,
+      "CONDITIONING"
+    ],
+    [
+      19,
+      11,
+      0,
+      16,
+      6,
+      "BBOX_DETECTOR"
+    ],
+    [
+      20,
+      15,
+      0,
+      16,
+      7,
+      "SAM_MODEL"
+    ],
+    [
+      21,
+      11,
+      1,
+      16,
+      8,
+      "SEGM_DETECTOR"
+    ],
+    [
+      22,
+      16,
+      0,
+      17,
+      0,
+      "IMAGE"
+    ],
+    [
+      24,
+      4,
+      0,
+      20,
+      0,
+      "MODEL"
+    ],
+    [
+      25,
+      3,
+      0,
+      20,
+      1,
+      "CLIP"
+    ],
+    [
+      28,
+      18,
+      0,
+      5,
+      8,
+      "RP_SUBPROMPTS"
+    ],
+    [
+      30,
+      18,
+      1,
+      5,
+      0,
+      "RP_LORA_MAP"
+    ],
+    [
+      32,
+      18,
+      2,
+      5,
+      1,
+      "RP_DIV_RATIO"
+    ],
+    [
+      55985,
+      6,
+      0,
+      29,
+      0,
+      "IMAGE"
+    ],
+    [
+      55986,
+      29,
+      0,
+      16,
+      0,
+      "IMAGE"
+    ],
+    [
+      55987,
+      29,
+      1,
+      27,
+      0,
+      "IMAGE"
+    ],
+    [
+      56531,
+      21,
+      1,
+      37,
+      7,
+      "RP_THRESHOLD"
+    ],
+    [
+      56532,
+      14,
+      0,
+      37,
+      8,
+      "LATENT"
+    ],
+    [
+      56533,
+      37,
+      1,
+      6,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "workflowRendererVersion": "LG",
+    "ue_links": [
+      {
+        "downstream": 8,
+        "downstream_slot": 0,
+        "upstream": "20",
+        "upstream_slot": 1,
+        "controller": 5,
+        "type": "CLIP"
+      },
+      {
+        "downstream": 9,
+        "downstream_slot": 0,
+        "upstream": "20",
+        "upstream_slot": 1,
+        "controller": 5,
+        "type": "CLIP"
+      },
+      {
+        "downstream": 10,
+        "downstream_slot": 0,
+        "upstream": "20",
+        "upstream_slot": 1,
+        "controller": 5,
+        "type": "CLIP"
+      },
+      {
+        "downstream": 16,
+        "downstream_slot": 1,
+        "upstream": "20",
+        "upstream_slot": 0,
+        "controller": 5,
+        "type": "MODEL"
+      },
+      {
+        "downstream": 16,
+        "downstream_slot": 2,
+        "upstream": "20",
+        "upstream_slot": 1,
+        "controller": 5,
+        "type": "CLIP"
+      },
+      {
+        "downstream": 16,
+        "downstream_slot": 3,
+        "upstream": "2",
+        "upstream_slot": 0,
+        "controller": 5,
+        "type": "VAE"
+      },
+      {
+        "downstream": 29,
+        "downstream_slot": 1,
+        "upstream": "20",
+        "upstream_slot": 0,
+        "controller": 5,
+        "type": "MODEL"
+      },
+      {
+        "downstream": 29,
+        "downstream_slot": 2,
+        "upstream": "20",
+        "upstream_slot": 1,
+        "controller": 5,
+        "type": "CLIP"
+      },
+      {
+        "downstream": 29,
+        "downstream_slot": 3,
+        "upstream": "2",
+        "upstream_slot": 0,
+        "controller": 5,
+        "type": "VAE"
+      },
+      {
+        "downstream": 29,
+        "downstream_slot": 4,
+        "upstream": "18",
+        "upstream_slot": 0,
+        "controller": 5,
+        "type": "RP_SUBPROMPTS"
+      },
+      {
+        "downstream": 29,
+        "downstream_slot": 5,
+        "upstream": "18",
+        "upstream_slot": 1,
+        "controller": 5,
+        "type": "RP_LORA_MAP"
+      },
+      {
+        "downstream": 29,
+        "downstream_slot": 6,
+        "upstream": "21",
+        "upstream_slot": 0,
+        "controller": 5,
+        "type": "RP_REGIONS"
+      },
+      {
+        "downstream": 29,
+        "downstream_slot": 7,
+        "upstream": "9",
+        "upstream_slot": 0,
+        "controller": 5,
+        "type": "CONDITIONING"
+      },
+      {
+        "downstream": 29,
+        "downstream_slot": 8,
+        "upstream": "18",
+        "upstream_slot": 3,
+        "controller": 5,
+        "type": "RP_DIV_MODE"
+      },
+      {
+        "downstream": 29,
+        "downstream_slot": 9,
+        "upstream": "18",
+        "upstream_slot": 2,
+        "controller": 5,
+        "type": "RP_DIV_RATIO"
+      },
+      {
+        "downstream": 6,
+        "downstream_slot": 1,
+        "upstream": "20",
+        "upstream_slot": 0,
+        "controller": 5,
+        "type": "MODEL"
+      },
+      {
+        "downstream": 6,
+        "downstream_slot": 3,
+        "upstream": "9",
+        "upstream_slot": 0,
+        "controller": 5,
+        "type": "CONDITIONING"
+      },
+      {
+        "downstream": 6,
+        "downstream_slot": 4,
+        "upstream": "2",
+        "upstream_slot": 0,
+        "controller": 5,
+        "type": "VAE"
+      },
+      {
+        "downstream": 12,
+        "downstream_slot": 0,
+        "upstream": "20",
+        "upstream_slot": 1,
+        "controller": 5,
+        "type": "CLIP"
+      },
+      {
+        "downstream": 37,
+        "downstream_slot": 0,
+        "upstream": "20",
+        "upstream_slot": 0,
+        "controller": 5,
+        "type": "MODEL"
+      },
+      {
+        "downstream": 37,
+        "downstream_slot": 1,
+        "upstream": "20",
+        "upstream_slot": 1,
+        "controller": 5,
+        "type": "CLIP"
+      },
+      {
+        "downstream": 37,
+        "downstream_slot": 2,
+        "upstream": "2",
+        "upstream_slot": 0,
+        "controller": 5,
+        "type": "VAE"
+      },
+      {
+        "downstream": 37,
+        "downstream_slot": 3,
+        "upstream": "18",
+        "upstream_slot": 0,
+        "controller": 5,
+        "type": "RP_SUBPROMPTS"
+      },
+      {
+        "downstream": 37,
+        "downstream_slot": 4,
+        "upstream": "21",
+        "upstream_slot": 0,
+        "controller": 5,
+        "type": "RP_REGIONS"
+      },
+      {
+        "downstream": 37,
+        "downstream_slot": 5,
+        "upstream": "18",
+        "upstream_slot": 1,
+        "controller": 5,
+        "type": "RP_LORA_MAP"
+      },
+      {
+        "downstream": 37,
+        "downstream_slot": 6,
+        "upstream": "9",
+        "upstream_slot": 0,
+        "controller": 5,
+        "type": "CONDITIONING"
+      },
+      {
+        "downstream": 37,
+        "downstream_slot": 9,
+        "upstream": "18",
+        "upstream_slot": 3,
+        "controller": 5,
+        "type": "RP_DIV_MODE"
+      },
+      {
+        "downstream": 21,
+        "downstream_slot": 0,
+        "upstream": "18",
+        "upstream_slot": 2,
+        "controller": 5,
+        "type": "RP_DIV_RATIO"
+      },
+      {
+        "downstream": 21,
+        "downstream_slot": 1,
+        "upstream": "18",
+        "upstream_slot": 3,
+        "controller": 5,
+        "type": "RP_DIV_MODE"
+      }
+    ],
+    "links_added_by_ue": [
+      59406,
+      59407,
+      59408,
+      59409,
+      59410,
+      59411,
+      59412,
+      59413,
+      59414,
+      59415,
+      59416,
+      59417,
+      59418,
+      59419,
+      59420,
+      59421,
+      59422,
+      59423,
+      59424,
+      59425,
+      59426,
+      59427,
+      59428,
+      59429,
+      59430,
+      59431,
+      59432,
+      59433,
+      59434
+    ],
+    "ds": {
+      "scale": 0.8860911439703838,
+      "offset": [
+        -4675.475566840898,
+        -4045.1657057157763
+      ]
+    },
+    "frontendVersion": "1.41.20",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
+}

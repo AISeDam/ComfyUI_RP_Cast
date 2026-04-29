@@ -1,0 +1,15 @@
+# ComfyUI_RP_Cast - requirements
+# Core runtime (ComfyUI, torch, numpy are pre-installed by ComfyUI)
+
+# Required
+Pillow>=10.1.0          # image decode for Detailer nodes and API image response (JPEG/WEBP)
+
+# Optional — Detailer nodes (RPRegionalDetailer, RPRegionalDetailerZImage, RPRegionalDetailerQwen)
+ultralytics             # YOLO person detection
+opencv-python           # mask dilation and blur (cv2)
+onnxruntime             # WD14 gender classification (ZImage Detailer only)
+
+# Optional — Txt2Img API nodes
+# No additional packages required.
+# RP Txt2Img (OpenAI / Gemini / Grok) nodes use Python built-in urllib only.
+# openai, google-generativeai, xai packages are NOT required.

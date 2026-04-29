@@ -1,0 +1,869 @@
+{
+  "id": "67781058-bce3-487c-a080-968b6ce7db66",
+  "revision": 0,
+  "last_node_id": 13,
+  "last_link_id": 25,
+  "nodes": [
+    {
+      "id": 3,
+      "type": "RPRatioParser",
+      "pos": [
+        369.3453932391698,
+        1593.3345937234071
+      ],
+      "size": [
+        285.076171875,
+        182
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "divide_ratio",
+          "type": "RP_DIV_RATIO",
+          "link": 1
+        },
+        {
+          "name": "divide_mode",
+          "type": "RP_DIV_MODE",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "regional_col_n_row",
+          "type": "RP_REGIONS",
+          "links": [
+            9
+          ]
+        },
+        {
+          "name": "threshold_out",
+          "type": "RP_THRESHOLD",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RPRatioParser",
+        "cnr_id": "comfyui-workflow-encrypt",
+        "ver": "1.0.0",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "0.5"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "VAELoader",
+      "pos": [
+        376.664492811691,
+        1961.8133855676397
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            7,
+            16
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.17.0",
+        "Node name for S&R": "VAELoader",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "qwen_image_vae.safetensors"
+      ]
+    },
+    {
+      "id": 5,
+      "type": "VAELoader",
+      "pos": [
+        1517.6223447067869,
+        3148.6333428175512
+      ],
+      "size": [
+        326.39349365234375,
+        86.6884994506836
+      ],
+      "flags": {
+        "pinned": true
+      },
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "label": "VAE",
+          "name": "VAE",
+          "type": "VAE",
+          "slot_index": 0,
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.48",
+        "Node name for S&R": "VAELoader",
+        "enableTabs": false,
+        "tabWidth": 65,
+        "tabXOffset": 10,
+        "hasSecondTab": false,
+        "secondTabText": "Send Back",
+        "secondTabOffset": 80,
+        "secondTabWidth": 65,
+        "models": [
+          {
+            "name": "qwen_image_vae.safetensors",
+            "directory": "vae",
+            "url": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/vae/qwen_image_vae.safetensors"
+          }
+        ],
+        "ue_properties": {
+          "version": "7.1",
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        }
+      },
+      "widgets_values": [
+        "qwen_image_vae.safetensors"
+      ],
+      "color": "#223",
+      "bgcolor": "#335",
+      "shape": 1
+    },
+    {
+      "id": 6,
+      "type": "SaveImage",
+      "pos": [
+        1375.4957035348368,
+        1639.8419665477038
+      ],
+      "size": [
+        270,
+        270
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 3
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.17.0",
+        "Node name for S&R": "SaveImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "%date:yyyy-MM-dd%\\comfyui_%date:yyyy-MM-dd%"
+      ]
+    },
+    {
+      "id": 7,
+      "type": "CLIPLoader",
+      "pos": [
+        379.45643687117246,
+        2076.7889072130733
+      ],
+      "size": [
+        270,
+        106
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            4,
+            6,
+            23
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.17.0",
+        "Node name for S&R": "CLIPLoader",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+        "qwen_image",
+        "default"
+      ]
+    },
+    {
+      "id": 8,
+      "type": "CLIPTextEncode",
+      "pos": [
+        -101.31887433919832,
+        2207.0319153240966
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            11,
+            19
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.17.0",
+        "Node name for S&R": "CLIPTextEncode",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "censored, skin blemish,  bad anatomy, dismembered, disembodied, elderly, wrinkles, cross-eyed, deformed,  deformed fingers, short legs, body diproportion. dark scene, , disfigured, kitsch, ugly, grain, low-res, poorly drawn face, mutation, mutated, extra limb, poorly drawn hands, missing limb, blurry, floating limbs, disconnected limbs, malformed hands, blur, out of focus, long neck, long body, disgusting, poorly drawn, childish, mutilated, mangled, old, surreal, double body, double face, incorrect posture, close up, two heads, two faces, plastic, Deformed, blurry, bad anatomy, bad eyes, crossed eyes, disfigured, poorly drawn face, mutation, mutated, blender, doll, cropped, low-res, close-up, poorly-drawn face, out of frame double, two heads, blurred, ugly, disfigured, too many fingers, deformed, repetitive, text, watermark,glossy, shiny, sweaty, glowing"
+      ]
+    },
+    {
+      "id": 9,
+      "type": "UnetLoaderGGUF",
+      "pos": [
+        381.8317510074133,
+        1834.0059485826766
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            22
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-workflow-encrypt",
+        "ver": "1.0.0",
+        "Node name for S&R": "UnetLoaderGGUF",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "QWEN\\qwen-image-2512-Q8_0.gguf"
+      ]
+    },
+    {
+      "id": 10,
+      "type": "RPKSamplerQwen",
+      "pos": [
+        687.4767022738548,
+        1601.3856657625083
+      ],
+      "size": [
+        279.28125,
+        462
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 5
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 6
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 7
+        },
+        {
+          "name": "regional_prompts_nolora",
+          "type": "RP_SUBPROMPTS",
+          "link": 8
+        },
+        {
+          "name": "regional_col_n_row",
+          "type": "RP_REGIONS",
+          "link": 9
+        },
+        {
+          "name": "regional_lora_map",
+          "type": "RP_LORA_MAP",
+          "link": 10
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 11
+        },
+        {
+          "name": "divide_mode",
+          "shape": 7,
+          "type": "RP_DIV_MODE",
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "latent",
+          "type": "LATENT",
+          "links": null
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RPKSamplerQwen",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        1088,
+        1920,
+        754808103537912,
+        "randomize",
+        4,
+        1,
+        "res_2s",
+        "simple",
+        3,
+        1,
+        10,
+        false
+      ]
+    },
+    {
+      "id": 11,
+      "type": "RPRegionalDetailerQwen",
+      "pos": [
+        994.8981271252466,
+        1599.326729154565
+      ],
+      "size": [
+        321.3046875,
+        698
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 13
+        },
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 24
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 25
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 16
+        },
+        {
+          "name": "regional_prompts_nolora",
+          "type": "RP_SUBPROMPTS",
+          "link": 17
+        },
+        {
+          "name": "regional_lora_map",
+          "type": "RP_LORA_MAP",
+          "link": 18
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 19
+        },
+        {
+          "name": "divide_mode",
+          "shape": 7,
+          "type": "RP_DIV_MODE",
+          "link": 20
+        },
+        {
+          "name": "divide_ratio",
+          "shape": 7,
+          "type": "RP_DIV_RATIO",
+          "link": 21
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "links": [
+            3
+          ]
+        },
+        {
+          "name": "debug_image",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RPRegionalDetailerQwen",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        884331330756456,
+        "randomize",
+        4,
+        1,
+        "res_2s",
+        "simple",
+        0.3,
+        5,
+        true,
+        true,
+        3,
+        "bbox/face_yolov8m.pt",
+        0.3,
+        10,
+        32,
+        20,
+        10,
+        1024,
+        true,
+        true,
+        false
+      ]
+    },
+    {
+      "id": 12,
+      "type": "Lora Loader Stack (rgthree)",
+      "pos": [
+        689.3492421904062,
+        2122.3024094456
+      ],
+      "size": [
+        282.542578125,
+        246
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 22
+        },
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 23
+        }
+      ],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            5,
+            24
+          ]
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            25
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "rgthree-comfy",
+        "ver": "8ff50e4521881eca1fe26aec9615fc9362474931",
+        "Node name for S&R": "Lora Loader Stack (rgthree)",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "Qwen2512\\Qwen-Image-2512-Lightning-4steps-V1.0-bf16.safetensors",
+        1,
+        "None",
+        1,
+        "None",
+        1,
+        "None",
+        1
+      ]
+    },
+    {
+      "id": 13,
+      "type": "RPPromptParser",
+      "pos": [
+        -117.9786920799788,
+        1598.065913723689
+      ],
+      "size": [
+        464.9536484984533,
+        560
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "regional_prompts_nolora",
+          "type": "RP_SUBPROMPTS",
+          "links": [
+            8,
+            17
+          ]
+        },
+        {
+          "name": "regional_lora_map",
+          "type": "RP_LORA_MAP",
+          "links": [
+            10,
+            18
+          ]
+        },
+        {
+          "name": "divide_ratio",
+          "type": "RP_DIV_RATIO",
+          "links": [
+            1,
+            21
+          ]
+        },
+        {
+          "name": "divide_mode",
+          "type": "RP_DIV_MODE",
+          "links": [
+            2,
+            12,
+            20
+          ]
+        },
+        {
+          "name": "original_prompts",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RPPromptParser",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.1"
+        }
+      },
+      "widgets_values": [
+        "in the cafe, group enjoy tea time,korean, 1boy and 2girls,\nADDCOMM\nShot on Kodak Portra 800, film grain 35mm, IMG_2985.HEIC, hyper-realistic, 8k, halation, pure-desire vibe, 00's analog film aesthetic, 35mm lens amateur photograph style, depth of field, ultra detailed textures, cinematic lighting, ray tracing reflections,diffused color,\nADDBASE\n1boy, black hair, brown eyes, short hair, white shirt, dark pants\nADDCOL\n1girl, blue eyes, blonde hair, short hair, white one-piece, jewelry, necklace, <lora:QWEN/face/mymuse27:1>\nADDCOL\n1girl, brown hair, white loose shirts,blue pants\n<lora:QWEN/face/mymuse28:1>\n",
+        "Horizontal",
+        "1,1,1",
+        "auto",
+        false,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      13,
+      2,
+      3,
+      0,
+      "RP_DIV_RATIO"
+    ],
+    [
+      2,
+      13,
+      3,
+      3,
+      1,
+      "RP_DIV_MODE"
+    ],
+    [
+      3,
+      11,
+      0,
+      6,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      7,
+      0,
+      8,
+      0,
+      "CLIP"
+    ],
+    [
+      5,
+      12,
+      0,
+      10,
+      0,
+      "MODEL"
+    ],
+    [
+      6,
+      7,
+      0,
+      10,
+      1,
+      "CLIP"
+    ],
+    [
+      7,
+      4,
+      0,
+      10,
+      2,
+      "VAE"
+    ],
+    [
+      8,
+      13,
+      0,
+      10,
+      3,
+      "RP_SUBPROMPTS"
+    ],
+    [
+      9,
+      3,
+      0,
+      10,
+      4,
+      "RP_REGIONS"
+    ],
+    [
+      10,
+      13,
+      1,
+      10,
+      5,
+      "RP_LORA_MAP"
+    ],
+    [
+      11,
+      8,
+      0,
+      10,
+      6,
+      "CONDITIONING"
+    ],
+    [
+      12,
+      13,
+      3,
+      10,
+      7,
+      "RP_DIV_MODE"
+    ],
+    [
+      13,
+      10,
+      1,
+      11,
+      0,
+      "IMAGE"
+    ],
+    [
+      16,
+      4,
+      0,
+      11,
+      3,
+      "VAE"
+    ],
+    [
+      17,
+      13,
+      0,
+      11,
+      4,
+      "RP_SUBPROMPTS"
+    ],
+    [
+      18,
+      13,
+      1,
+      11,
+      5,
+      "RP_LORA_MAP"
+    ],
+    [
+      19,
+      8,
+      0,
+      11,
+      6,
+      "CONDITIONING"
+    ],
+    [
+      20,
+      13,
+      3,
+      11,
+      7,
+      "RP_DIV_MODE"
+    ],
+    [
+      21,
+      13,
+      2,
+      11,
+      8,
+      "RP_DIV_RATIO"
+    ],
+    [
+      22,
+      9,
+      0,
+      12,
+      0,
+      "MODEL"
+    ],
+    [
+      23,
+      7,
+      0,
+      12,
+      1,
+      "CLIP"
+    ],
+    [
+      24,
+      12,
+      0,
+      11,
+      1,
+      "MODEL"
+    ],
+    [
+      25,
+      12,
+      1,
+      11,
+      2,
+      "CLIP"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "workflowRendererVersion": "LG",
+    "ue_links": [],
+    "ds": {
+      "scale": 0.6303940863128767,
+      "offset": [
+        1211.6045866478796,
+        -1314.8897379440039
+      ]
+    },
+    "links_added_by_ue": [],
+    "frontendVersion": "1.41.20",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
+}
