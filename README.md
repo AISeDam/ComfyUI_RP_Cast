@@ -3,7 +3,7 @@
 Generate images with **different prompts per region** — left/right, top/bottom, or grid layouts.
 Supports SDXL, Z-Image, and Qwen models.
 
-**Version: 0.5.59** | [GitHub](https://github.com/AISeDam/ComfyUI_RP_Cast)
+**Version: 0.5.60** | [GitHub](https://github.com/AISeDam/ComfyUI_RP_Cast)
 
 ---
 
@@ -290,6 +290,26 @@ Generates images using the [xAI Grok Image Generation API](https://docs.x.ai/dev
 ---
 
 ## Update History
+
+### v0.5.60 (2026-04-30)
+
+**Bug Fixes**
+- Fixed `RPKSampler` `use_base=False`: BASE block text (nolora_list[0]) is now correctly skipped; previously included as COL[0] causing region mis-mapping
+- Fixed `RPKSampler` `use_base=False`: inject null BASE anchor (empty text, strength=0.0) to prevent COL-to-COL bleeding via area conditioning
+- Fixed `RPKSampler` `use_base=False`: COL conditioning `strength` forced to 1.0 (base_ratio now ignored when use_base=False)
+- Fixed `RPKSampler` `use_base=False`: exclusive area boundaries applied (no overlap) to prevent region bleed
+- Fixed `RPKSampler` col_lora_map index: `lora_offset` added to LoRADivisionManager so LoRA maps correctly when use_base=False
+- Fixed `RPKSampler` `use_base=True`: BASE text now encoded correctly (was incorrectly set to null in previous fix attempt)
+- Fixed all samplers/detailers: `patches.clear()` replaced with `patches = {}` to prevent shared dict mutation across runs
+- Fixed all samplers/detailers: `unpatch_model()` called before sampling to release stale LowVramPatch registrations
+- Fixed `RPRegionalDetailerZImage`: LoRA models pre-built before inpaint loop (not inside loop) to prevent object_patch stacking
+- Fixed `RPRegionalDetailerZImage`: always use `model.clone()` as fresh base to prevent cross-run patch contamination
+
+**Changed**
+- `core/prompt_parser.py`: `subprompts_raw` now contains col-only text; common text no longer pre-merged here
+- `core/lora_manager.py`: added `lora_offset` parameter to `setup()`, `prebuild_cache()`, `get_model_for_division()`
+- `RPKSampler`: common text pre-merged into each DIV encode text exactly once before CLIP encoding (`_null_base` strategy)
+
 
 ### v0.5.59 (2026-04-29)
 

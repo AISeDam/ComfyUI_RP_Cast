@@ -1,7 +1,7 @@
 [project]
 name = "ComfyUI_RP_Cast"
-description = "Regional Prompter for ComfyUI — per-region prompt control with LoRA, Z-Image (AuraFlow), and Qwen VL support"
-version = "0.5.59"
+description = "Per-region prompt and LoRA control for SD1.5, SDXL, Z-Image, and Qwen — compatible with multiple model architectures."
+version = "0.5.60"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
 

@@ -42,7 +42,7 @@ _H_LABELS = {1: ["center"], 2: ["left", "right"], 3: ["left", "center", "right"]
 _V_LABELS = {1: [""], 2: ["upper", "lower"], 3: ["upper", "middle", "lower"]}
 
 def _h_label(col: int, n_cols: int) -> str:
-    """수평 위치 레이블"""
+    """Horizontal position label."""
     row = _H_LABELS.get(n_cols)
     if row: return row[min(col, n_cols - 1)]
     r = col / (n_cols - 1) if n_cols > 1 else 0
@@ -50,15 +50,15 @@ def _h_label(col: int, n_cols: int) -> str:
 
 def _pos_label(row: int, col: int, n_rows: int, n_cols_in_row: int, n_cols_total: int = 0) -> str:
     """
-    셀 위치 레이블.
-    row            : 행 인덱스
-    col            : 열 인덱스
-    n_rows         : 전체 행 수
-    n_cols_in_row  : 해당 행의 실제 열 수
-    n_cols_total   : 전체 최대 열 수 (비대칭 그리드에서 단독 열 center 판단용)
+    Cell position label.
+    row            : row index
+    col            : column index
+    n_rows         : total row count
+    n_cols_in_row  : column count in this row
+    n_cols_total   : max columns across rows (for asymmetric grid center detection)
     """
     _max_cols = n_cols_total if n_cols_total > 0 else n_cols_in_row
-    # Horizontal: if single col in row but layout has more cols → center
+    # Horizontal: single col in row but layout has more cols → center
     if n_cols_in_row == 1 and _max_cols > 1:
         h = "center"
     else:
@@ -73,9 +73,8 @@ def _pos_label(row: int, col: int, n_rows: int, n_cols_in_row: int, n_cols_total
 # ── regional_col_n_row parser ───────────────────────────────────────────────
 def _parse_col_n_row(col_n_row: str) -> Optional[tuple[int, int]]:
     """
-    "cols x rows" 또는 "cols,rows" 포맷 파싱.
-    예: "3x2" → (3, 2), "2,2" → (2, 2)
-    유효하지 않으면 None 반환.
+    Parse "cols x rows" or "cols,rows" format.
+    e.g. "3x2" → (3, 2), "2,2" → (2, 2). Returns None if invalid.
     """
     if not col_n_row or not col_n_row.strip():
         return None
@@ -98,16 +97,16 @@ def _convert_rp_to_natural(
     debug: bool = False,
 ) -> str:
     """
-    Regional Prompter 문법을 GPT API용 자연어 프롬프트로 변환.
+    Convert Regional Prompter syntax to natural language for image generation APIs.
 
     Parameters
     ----------
-    prompt             : ADDCOMM/ADDBASE/ADDCOL/ADDROW 포함 원본 프롬프트
-    regional_col_n_row : "cols x rows" 포맷 (optional).
-                         입력 시 → 해당 그리드로 위치 계산.
-                         미입력 시 → ADDROW 유무로 자동 판단.
-    divide_mode        : "Horizontal" | "Vertical". RPRatioParser의 divide_mode와 일치.
-    debug              : True 시 디버그 출력
+    prompt             : RP prompt with ADDCOMM/ADDBASE/ADDCOL/ADDROW syntax
+    regional_col_n_row : "cols x rows" format (optional).
+                         If provided → use as grid layout.
+                         If omitted → auto-detect from ADDROW presence.
+    divide_mode        : "Horizontal" | "Vertical". Matches RPRatioParser divide_mode. mode.
+    debug              : Print debug output if True
     """
     # 1. Split ADDCOMM
     if _KEYCOMM in prompt:
@@ -143,8 +142,8 @@ def _convert_rp_to_natural(
 
     # ── Vertical parsing helper ──────────────────────────────────────────
     def _parse_vertical(gpart: str):
-        """Vertical: ADDCOL=열 주축, ADDROW=열 내 행 분할.
-        반환: cells=(row,col,text,n_rows_in_col,n_cols_total), n_cols"""
+        """Vertical: ADDCOL=col axis, ADDROW=row split within col.
+        Returns: cells=(row,col,text,n_rows_in_col,n_cols_total), n_cols"""
         col_blocks = gpart.split(_KEYCOL)
         col_blocks = [b for b in col_blocks if _clean(b)]
         n_cols_total = len(col_blocks)
@@ -158,8 +157,8 @@ def _convert_rp_to_natural(
         return _cells, n_cols_total
 
     def _parse_horizontal(gpart: str):
-        """Horizontal: ADDROW=행 주축, ADDCOL=열 분할.
-        반환: cells=(row,col,text,n_rows,n_cols_in_row), n_cols_total"""
+        """Horizontal: ADDROW=row axis, ADDCOL=col split.
+        Returns: cells=(row,col,text,n_rows,n_cols_in_row), n_cols_total"""
         row_blocks = gpart.split(_KEYROW)
         row_blocks = [b for b in row_blocks if _clean(b)] or [gpart]
         n_total_rows = len(row_blocks)
@@ -177,7 +176,7 @@ def _convert_rp_to_natural(
     # ── Case A: explicit_grid provided ──────────────────────────────────────
     if explicit_grid:
         n_cols, n_rows = explicit_grid
-        # Determine parse direction from divide_mode (matches RPRatioParser)
+        # Parse direction from divide_mode (matches RPRatioParser)
         use_vertical = (divide_mode == "Vertical")
         if use_vertical:
             cells, n_cols = _parse_vertical(grid_part)
@@ -247,7 +246,7 @@ def _convert_rp_to_natural(
 import os as _os
 
 def _settings_path() -> str:
-    """ComfyUI settings.json 경로"""
+    """Return ComfyUI settings.json path."""
     return _os.path.normpath(_os.path.join(
         _os.path.dirname(__file__), "..", "..", "..", "..",
         "user", "default", "comfy.settings.json"))
@@ -271,7 +270,7 @@ def _regions_to_col_n_row(regional_col_n_row, divide_mode: str, debug: bool, tag
             print(f"[{tag}] RP_REGIONS -> {n_rows}rows x {n_cols}cols  mode={divide_mode}")
         return f"{n_cols}x{n_rows}"
     except Exception as e:
-        print(f"[{tag}] regional_col_n_row 파싱 실패: {e}")
+        print(f"[{tag}] regional_col_n_row parse failed: {e}")
         return ""
 
 def _png_to_tensor(png_bytes: bytes):
@@ -300,7 +299,7 @@ def _png_to_tensor(png_bytes: bytes):
     # Determine channel count
     ch_map = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}
     channels = ch_map.get(color_type, 3)
-    stride = W * channels + 1  # +1 for filter byte
+    stride = W * channels + 1  # +1 for filter byte per row
 
     pixels = []
     prev_row = bytes(W * channels)
@@ -343,8 +342,8 @@ def _png_to_tensor(png_bytes: bytes):
 
 def _bytes_to_tensor(img_bytes: bytes, mime_type: str = ""):
     """
-    이미지 bytes → (1, H, W, 3) float32 Tensor.
-    mimeType 또는 바이트 시그니처로 PNG/JPEG/WEBP 자동 감지.
+    Decode image bytes → (1, H, W, 3) float32 Tensor.
+    Auto-detects PNG/JPEG/WEBP from byte signature or mimeType.
     """
     import torch
 
@@ -360,20 +359,20 @@ def _bytes_to_tensor(img_bytes: bytes, mime_type: str = ""):
     if is_png:
         return _png_to_tensor(img_bytes)
 
-    # JPEG / WEBP / other → decode via PIL
+    # JPEG / WEBP / other image formats → decode via PIL
     try:
         from PIL import Image
         import io, numpy as np
         img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
         arr = np.array(img, dtype=np.float32) / 255.0
         t = torch.from_numpy(arr).unsqueeze(0)  # (1, H, W, 3)
-        print(f"[_bytes_to_tensor] PIL 처리 완료: {img.size} mode={img.mode}")
+        print(f"[_bytes_to_tensor] PIL decode OK: {img.size} mode={img.mode}")
         return t
     except ImportError:
         raise RuntimeError(
-            "PIL(Pillow)이 필요합니다: pip install Pillow\n"
+            "PIL(Pillow) is required: pip install Pillow\n"
             f"mime={mime_type}  header={img_bytes[:8].hex()}")
     except Exception as e:
         raise RuntimeError(
-            f"이미지 디코딩 실패: {e}\n"
+            f"Image decode failed: {e}\n"
             f"mime={mime_type}  header={img_bytes[:12].hex()}")

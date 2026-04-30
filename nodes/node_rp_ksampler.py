@@ -226,6 +226,7 @@ class RPKSampler:
         # Prompt-EX: encode common and col separately, then concat on dim=1
         # → CLIP attention processes common and col tokens as separate chunks
         # → col-specific features reflected strongly without dilution by common
+        #
         # Normal: encode("common, col") → single 77-token (common dilutes col)
         # Prompt-EX: encode("common") + encode("col") → 154-token concat
 
@@ -238,17 +239,14 @@ class RPKSampler:
             _row_struct  = regional_prompts_nolora.get("row_structure", [])
             # has_base/has_common: keyword detection result from prompt
             # Effective only when RPKSampler use_base/use_common is True
-            # Both must be True: widget setting and prompt structure must agree
+            # → Both must be True to activate (user intent + prompt structure match)
             _has_base    = regional_prompts_nolora.get("has_base",   use_base)
             _has_common  = regional_prompts_nolora.get("has_common", use_common)
             use_base     = use_base   and _has_base
             # use_common: widget value takes priority - active when common_text exists and use_common=True
             # has_common is structure detection, but use_common widget=True overrides
             _use_com     = use_common
-            # prompt_ex disabled: common is pre-merged into encode_texts
-            
-            
-            prompt_ex    = False  # common is pre-merged; no additional concat needed
+            prompt_ex    = False  # common is pre-merged into encode_texts; no additional concat
         elif isinstance(regional_prompts_nolora, str):
             nolora_list  = [regional_prompts_nolora]
             common_text  = ""
@@ -262,7 +260,7 @@ class RPKSampler:
             col_texts    = nolora_list
             prompt_ex    = False
 
-        _dbg(f"  [Prompt-EX] {'✓ active' if prompt_ex else '✗ inactive (no common or use_common=False)'}")
+        _dbg(f"  [common merge] use_common={use_common}  common_text={bool(common_text)}  → {'active' if (use_common and common_text) else 'inactive'}")
         if prompt_ex:
             _dbg(f"    common='{common_text[:60]}'")
 
@@ -271,26 +269,47 @@ class RPKSampler:
         # ── Batch CLIP encode (load/unload CLIP model once) ─────
         # Batch tokenize all col texts → encode once → slice results
         # common_text is shared across all DIVs, encode only once
+        #
         # Processing order:
         #   1. Batch tokenize N col texts
         #   2. encode_from_tokens(batch) → cond[N, seq, dim], pooled[N, dim]
-        #   3. Pre-merge: common is already merged into encode_texts
+        #   3. Pre-merge: common already merged into encode_texts
         #   4. Slice results into conds list
 
-        # ── Pre-merge: merge common into each DIV text exactly once ──
-        # nolora_list[i] = col-only (common excluded in parse_prompt)
-        # col_texts[i]   = col-only (LoRA removed)
-        # encode_texts[i] = common + col  (merged here, once)
+        # ── Pre-merge: merge common into each DIV text (once only) ────────────
+        # use_base=True:           BASE[i=0]=base text, COL[i>0]=common+col
+        # use_base=False+has_base: BASE[i=0]="" (null anchor, strength=0.0)
+        # use_base=False only:     COL only, no BASE slot
+        _null_base = False  # True when use_base=False is overridden with null BASE
+        _start_idx = 0
+        if not use_base and _has_base:
+            use_base   = True   # activate BASE slot with null text
+            _null_base = True
+            _dbg(f"  [use_base=False] null BASE anchor activated → COL bleeding prevention")
+
         encode_texts = []
         full_texts   = []
-        for i in range(len(nolora_list)):
+        for i in range(_start_idx, len(nolora_list)):
+            is_base_slot = (use_base and i == 0)
+            if is_base_slot and _null_base:
+                # null BASE slot: empty text, strength=0.0
+                encode_texts.append("")
+                full_texts.append("[BASE=null]")
+                _dbg(f"  [BASE=null] strength=0.0, base_ratio ignored")
+                continue
+            if is_base_slot:
+                # use_base=True: encode BASE text normally
+                col_only = _RE_LORA.sub("", col_texts[i]).strip() if i < len(col_texts) else ""
+                encode_texts.append(col_only)
+                full_texts.append(col_only)
+                continue
             col_only = _RE_LORA.sub("", col_texts[i]).strip() if i < len(col_texts) else ""
             if use_common and common_text:
                 merged = (common_text + ", " + col_only).strip(", ") if col_only else common_text
             else:
                 merged = col_only or _RE_LORA.sub("", nolora_list[i]).strip()
             encode_texts.append(merged)
-            full_texts.append(merged)  # for logging
+            full_texts.append(merged)
 
         _c_com = None
         _use_prompt_ex = False
@@ -412,10 +431,15 @@ class RPKSampler:
                         acc += n
                 return f"DIV[0,{div_i}]"
 
+            # col_lora_map index: 0=BASE, 1~=div0,div1,...
+            # _lora_offset maps actual_areas index to col_lora_map key
+            _lora_offset = _start_idx  # 0 if use_base=True, 1 if null_base
+
             lora_mgr.setup(
                 col_lora_map=col_lora_map, division_count=actual_areas,
                 base_model=model, base_clip=clip,
-                div_label_fn=_make_div_label
+                div_label_fn=_make_div_label,
+                lora_offset=_lora_offset,
             )
             lora_mgr.prebuild_cache()
 
@@ -437,7 +461,7 @@ class RPKSampler:
                 else:
                     label = f"DIV[0,{_lora_col_seq}]"
                     _lora_col_seq += 1
-                loras_i = col_lora_map.get(i, {})
+                loras_i = col_lora_map.get(i + _lora_offset, {})
                 akey = _make_addnet_key(loras_i)
                 cached = lora_mgr._cache.get(akey)
                 if loras_i:
@@ -481,17 +505,22 @@ class RPKSampler:
             is_base = (use_base and a == 0)
 
             if is_base:
-                # filter already reflects base_ratio values
-                # set conditioning strength to base_ratio average
-                base_strength = sum(base_ratio_list) / len(base_ratio_list) if base_ratio_list else 0.2
+                # null BASE anchor: strength=0.0, no conditioning contribution
+                # use_base=True: apply average base_ratio as BASE strength
+                if full_texts[0] == "[BASE=null]":
+                    base_strength = 0.0  # null anchor: no contribution
+                else:
+                    base_strength = sum(base_ratio_list) / len(base_ratio_list) if base_ratio_list else 0.2
                 new_dict['strength']  = base_strength
                 new_dict['min_sigma'] = 0.0
                 new_dict['max_sigma'] = 99.0
-                # no area = full image
                 if 'area' in new_dict: del new_dict['area']
-                _dbg(f"  [area] BASE  strength={base_strength:.2f}  (full area, filter=base_ratio)")
+                _dbg(f"  [area] BASE  strength={base_strength:.2f}  {'(null anchor)' if base_strength==0.0 else '(full area)'}")
             else:
-                br            = base_ratio_list[col_idx] if col_idx < len(base_ratio_list) else 0.2
+                # null BASE: COL strength=1.0, base_ratio ignored
+                # use_base=True: apply base_ratio normally
+                _is_null_base = (full_texts[0] == "[BASE=null]") if full_texts else False
+                br            = 0.0 if _is_null_base else (base_ratio_list[col_idx] if col_idx < len(base_ratio_list) else 0.2)
                 sigma_min_col = _col_sigma_mins[col_idx] if col_idx < len(_col_sigma_mins) else 0.0
 
                 # Calculate 2D label
@@ -516,7 +545,14 @@ class RPKSampler:
                     y0, y1 = rows[0].item(), rows[-1].item() + 1
                     x0, x1 = cols_px[0].item(), cols_px[-1].item() + 1
 
-                    if mode == "Horizontal":
+                    if not use_base:
+                        # use_base=False: exclusive area (no overlap)
+                        # Exclusive COL areas: no overlap, prevents region bleeding
+                        x0_ov = x0
+                        x1_ov = x1
+                        y0_ov = y0
+                        y1_ov = y1
+                    elif mode == "Horizontal":
                         # Horizontal: overlap both row(y) and col(x) boundaries
                         x0_ov = max(0, x0 - _overlap_x)
                         x1_ov = min(w, x1 + _overlap_x)
@@ -627,6 +663,10 @@ class RPKSampler:
             sample_model.set_model_unet_function_wrapper(_rp_lora_wrapper)
             _dbg(f"  [RP LoRA] wrapper applied  actual_areas={actual_areas}")
 
+        try:
+            sample_model.unpatch_model()
+        except Exception:
+            pass
         output = comfy.sample.sample(
             model        = sample_model,
             noise        = noise,
@@ -664,8 +704,9 @@ class RPKSampler:
         # Release model reference (prevent circular ref)
         try:
             if sample_model is not model:
-                if hasattr(sample_model, "patches"):
-                    sample_model.patches.clear()
+                sample_model.patches = {}
+                sample_model.object_patches = {}
+                sample_model.object_patches_backup = {}
                 del sample_model
         except Exception:
             pass

@@ -1,20 +1,20 @@
 """
-Regional Prompter - Prompt Parser
-Parses ADDCOMM/ADDBASE/ADDCOL/ADDROW syntax into structured region prompts.
+Regional Prompter - Prompt Parser (2D support)
 
-Prompt structure:
-  <scene>         : global scene description (before ADDCOMM)
-  ADDCOMM         : terminates scene block
-  <common>        : shared quality/style tags
-  ADDBASE         : terminates common block; begins BASE region
-  <base>          : BASE region prompt (div0)
-  ADDCOL          : terminates previous region; begins next region
-  <div1>          : next region prompt
-  ADDCOL          : terminates div1; begins div2
-  <div2>          : next region prompt (last trailer omitted)
+1D (ADDCOL only):
+  [common] ADDCOMM [base] ADDBASE [col0] ADDCOL [col1] ADDCOL [col2]
+  → subprompts = [base, col0, col1, col2]
 
-Each keyword acts as a trailer — it terminates the preceding block.
-Supports 1D (ADDCOL/ADDROW) and 2D (ADDROW + ADDCOL combined) layouts.
+2D (ADDROW + ADDCOL combined):
+  Columns mode:
+    ADDROW = row separator  (top→bottom)
+    ADDCOL = col separator  (left→right)
+  structure: row0_col0 ADDCOL row0_col1 ADDROW row1_col0 ADDCOL row1_col1
+  → subprompts order: left→right, top→bottom (row0_col0, row0_col1, row1_col0, row1_col1)
+  → is_2d=True, rows_structure: [[n_cols per row]] returned
+
+common is not generated as standalone chunk (SD-WebUI original behavior).
+col_lora_map key = 1:1 with subprompts array index.
 """
 import re
 from typing import List, Dict, Tuple, Optional
@@ -129,8 +129,7 @@ def parse_prompt(
         _row_structure = [len(_col_parts)] if _col_parts else []
 
     # ── 4. Build chunks ──────────────────────────────────
-    # common is merged in KSampler pre-merge step (once)
-    # subprompts_raw contains col-only text; no common here
+    # common is merged in KSampler pre-merge; col-only text here
 
     subprompts_raw: List[str] = []
 
@@ -161,8 +160,8 @@ def parse_prompt(
     common_text = _strip_lora(_clean(prompt.split(KEYCOMM)[0])) if KEYCOMM in prompt else ""
 
     # col_texts:
-    #   usebase=True  → [0]=BASE col-only, [1..]=DIV col-only
-    #   usebase=False → [0..]=DIV col-only
+    #   usebase=True → [0]=BASE col_only(_base_part), [1..]=DIV col_only(_col_parts)
+    #   usebase=False → [0..]=DIV col_only(_col_parts)
     # _base_part = between ADDCOMM and ADDBASE (controlled by use_base)
     # _col_parts[0] = between ADDBASE and first ADDCOL = DIV[0,0]
     # _col_parts[1] = after first ADDCOL = DIV[0,1]

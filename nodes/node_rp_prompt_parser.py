@@ -317,18 +317,23 @@ class RPRatioParser:
 
 # ══════════════════════════════════════════════════════
 # 3. RPKSampler
+#
 # LoRA replacement redesign:
 #   Calls separate apply_model per division inside model_function_wrapper.
+#   
 #   ComfyUI base sampling structure:
 #     sampler receives x(noisy latent) and calls apply_model(x, t, cond)
 #     → denoised = apply_model(...)
+#
 #   RP method (model_function_wrapper):
 #     positive conditioning is [cond0, cond1, cond2, ...] (per division)
 #     ComfyUI batches these as x_repeated = x.repeat(areas+1, ...)
 #     → input shape: [(areas+1)*batch, C, H, W]
+#
 #   Correct blending:
 #     apply spatial filter to denoised result in wrapper
 #     blend each division's denoised with its filter
+#
 #   LoRA application:
 #     use LoRA-patched model per division when calling apply_model
 #     → call apply_model separately per division in wrapper

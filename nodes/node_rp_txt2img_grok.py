@@ -1,8 +1,9 @@
 """
-RP Txt2Img (Grok) - Regional Prompter to xAI Grok Image API
-Converts ADDCOMM/ADDBASE/ADDCOL/ADDROW prompt syntax to natural language
-and generates images via xAI Grok Image Generation API.
-API: https://docs.x.ai/developers/rest-api-reference/inference/images
+RP Txt2Img (Grok) - xAI Grok Image Generation API
+Version: 0.5.59
+
+REST API: https://docs.x.ai/developers/rest-api-reference/inference/images
+Endpoint: POST https://api.x.ai/v1/images/generations
 """
 from __future__ import annotations
 import json, urllib.request, urllib.error, base64
@@ -24,7 +25,7 @@ _ASPECT_RATIOS = [
 
 
 class RPTxt2ImgGrok:
-    """RP 프롬프트를 xAI Grok 이미지 생성 API로 이미지를 생성하는 노드."""
+    """Generate images from RP prompts via xAI Grok Image Generation API."""
     CATEGORY = "RP Cast"
 
     @classmethod
@@ -34,7 +35,7 @@ class RPTxt2ImgGrok:
                 "model":        (_GROK_IMAGE_MODELS, {"default": "grok-imagine-image"}),
                 "prompt":       ("STRING", {
                     "multiline": True, "default": "",
-                    "tooltip": "ADDCOMM/ADDBASE/ADDCOL/ADDROW 포함 RP 프롬프트 또는 일반 프롬프트",
+                    "tooltip": "RP prompt with ADDCOMM/ADDBASE/ADDCOL/ADDROW syntax, or plain text.",
                 }),
                 "aspect_ratio": (_ASPECT_RATIOS, {"default": "16:9"}),
                 "quality":      (["low", "medium", "high"], {"default": "medium"}),
@@ -43,9 +44,9 @@ class RPTxt2ImgGrok:
             },
             "optional": {
                 "regional_col_n_row": ("RP_REGIONS",
-                    {"tooltip": "RPRatioParser의 regional_col_n_row 출력과 연결."}),
+                    {"tooltip": "Connect regional_col_n_row output from RPRatioParser."}),
                 "divide_mode": ("RP_DIV_MODE",
-                    {"tooltip": "RP Prompt Parser의 divide_mode 출력과 연결."}),
+                    {"tooltip": "Connect divide_mode output from RPPromptParser."}),
             },
         }
 
@@ -62,7 +63,7 @@ class RPTxt2ImgGrok:
         api_key = _get_setting("ComfyUI-RP-Cast.Configuration.grok_api_key").strip()
         if not api_key:
             raise RuntimeError(
-                "Grok API Key가 설정되지 않았습니다.\n"
+                "Grok API Key is not set.\n"
                 "Settings > ComfyUI-RP-Cast > Configuration > grok_api_key")
 
         col_n_row_str = _regions_to_col_n_row(regional_col_n_row, divide_mode, debug, "RPTxt2ImgGrok")
@@ -109,7 +110,7 @@ class RPTxt2ImgGrok:
                 tensors.append(tensor)
 
         if not tensors:
-            raise RuntimeError("Grok API 응답에 이미지 데이터가 없습니다.")
+            raise RuntimeError("Grok API response contains no image data.")
 
         return (torch.cat(tensors, dim=0),)
 

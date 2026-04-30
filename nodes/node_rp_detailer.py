@@ -487,6 +487,10 @@ class RPRegionalDetailer:
                     align_corners=False
                 ).squeeze(0).to(latent_crop.device)   # [1, lh, lw]
 
+            try:
+                sample_model.unpatch_model()
+            except Exception:
+                pass
             inpaint_output = comfy.sample.sample(
                 model        = sample_model,
                 noise        = noise,
@@ -542,8 +546,9 @@ class RPRegionalDetailer:
             # Release sample_model immediately (cloned per loop → prevent leak)
             try:
                 if sample_model is not model:
-                    if hasattr(sample_model, "patches"):
-                        sample_model.patches.clear()
+                    sample_model.patches = {}
+                    sample_model.object_patches = {}
+                    sample_model.object_patches_backup = {}
                     del sample_model
             except Exception:
                 pass

@@ -1,8 +1,8 @@
 """
-RP Txt2Img (Gemini) - Regional Prompter to Google Gemini Image API
-Converts ADDCOMM/ADDBASE/ADDCOL/ADDROW prompt syntax to natural language
-and generates images via Google Gemini generateContent API.
-API: https://ai.google.dev/gemini-api/docs/image-generation
+RP Txt2Img (Gemini) - Google Gemini Image Generation API
+Version: 0.5.59
+
+REST API: https://ai.google.dev/gemini-api/docs/image-generation
 """
 from __future__ import annotations
 import json, urllib.request, urllib.error, base64
@@ -29,7 +29,7 @@ class RPTxt2ImgGemini:
                                  {"default": "gemini-3.1-flash-image-preview"}),
                 "prompt":       ("STRING", {
                     "multiline": True, "default": "",
-                    "tooltip": "ADDCOMM/ADDBASE/ADDCOL/ADDROW 포함 RP 프롬프트 또는 일반 프롬프트",
+                    "tooltip": "RP prompt with ADDCOMM/ADDBASE/ADDCOL/ADDROW syntax, or plain text.",
                 }),
                 "aspect_ratio": (
                     ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5",
@@ -41,9 +41,9 @@ class RPTxt2ImgGemini:
             },
             "optional": {
                 "regional_col_n_row": ("RP_REGIONS",
-                    {"tooltip": "RPRatioParser의 regional_col_n_row 출력과 연결."}),
+                    {"tooltip": "Connect regional_col_n_row output from RPRatioParser."}),
                 "divide_mode": ("RP_DIV_MODE",
-                    {"tooltip": "RP Prompt Parser의 divide_mode 출력과 연결."}),
+                    {"tooltip": "Connect divide_mode output from RPPromptParser."}),
             },
         }
 
@@ -60,9 +60,9 @@ class RPTxt2ImgGemini:
         api_key = _get_setting("ComfyUI-RP-Cast.Configuration.gemini_api_key").strip()
         if not api_key:
             raise RuntimeError(
-                "Gemini API Key가 설정되지 않았습니다.\n"
+                "Gemini API Key is not set.\n"
                 "Settings > ComfyUI-RP-Cast > Configuration > gemini_api_key\n"
-                "API Key 발급: https://aistudio.google.com/apikey")
+                "Get API Key: https://aistudio.google.com/apikey")
 
         col_n_row_str = _regions_to_col_n_row(regional_col_n_row, divide_mode, debug, "RPTxt2ImgGemini")
         final_prompt  = (_convert_rp_to_natural(prompt, col_n_row_str, divide_mode, debug)
@@ -109,8 +109,8 @@ class RPTxt2ImgGemini:
 
         if not tensors:
             raise RuntimeError(
-                f"Gemini API 응답에 이미지 데이터가 없습니다.\n"
-                f"응답: {json.dumps(data, ensure_ascii=False)[:300]}")
+                f"Gemini API response contains no image data.\n"
+                f"Response: {json.dumps(data, ensure_ascii=False)[:300]}")
 
         return (torch.cat(tensors, dim=0),)
 

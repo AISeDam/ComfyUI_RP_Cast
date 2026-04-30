@@ -1,7 +1,10 @@
 """
-Regional Prompter - Spatial Mask Builder
-Builds binary spatial filter tensors for each region (BASE + COL areas).
-Filters are used by RP KSampler for area conditioning.
+Regional Prompter - Spatial mask builder and Denoised Callback
+P1 core: latent spatial blending logic.
+
+Full port of SD-WebUI denoised_callback_s():
+    filters count = areas*batch (repeated in batch direction)
+    x[a + b*areas] = xt[b + a*batch]*fil + xt[-batch+b]*(1-fil)
 """
 from __future__ import annotations
 

@@ -12,4 +12,3 @@ onnxruntime             # WD14 gender classification (ZImage Detailer only)
 # Optional — Txt2Img API nodes
 # No additional packages required.
 # RP Txt2Img (OpenAI / Gemini / Grok) nodes use Python built-in urllib only.
-# openai, google-generativeai, xai packages are NOT required.

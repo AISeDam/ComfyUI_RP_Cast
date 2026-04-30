@@ -4,7 +4,7 @@ ComfyUIで**領域ごとに異なるプロンプト**を適用するノード集
 左右・上下・グリッド分割などに対応しています。
 SDXL、Z-Image、Qwen モデルで使用できます。
 
-**バージョン: 0.5.59** | [GitHub](https://github.com/AISeDam/ComfyUI_RP_Cast)
+**バージョン: 0.5.60** | [GitHub](https://github.com/AISeDam/ComfyUI_RP_Cast)
 
 ---
 
@@ -258,6 +258,26 @@ API Key 取得: https://aistudio.google.com/apikey
 ---
 
 ## アップデート履歴
+
+### v0.5.60 (2026-04-30)
+
+**バグ修正**
+- `RPKSampler` `use_base=False` 修正: BASE ブロックテキスト(nolora_list[0])が正しくスキップされず、リージョンマッピングがずれていた問題
+- `RPKSampler` `use_base=False` 修正: null BASE アンカー（空テキスト, strength=0.0）を注入し COL 間 bleeding を防止
+- `RPKSampler` `use_base=False` 修正: COL conditioning strength を 1.0 に強制（use_base=False 時は base_ratio を無視）
+- `RPKSampler` `use_base=False` 修正: exclusive area 境界を適用してリージョン bleed を防止
+- `RPKSampler` col_lora_map インデックス修正: `lora_offset` 追加で use_base=False 時に LoRA が正しくマッピングされるよう修正
+- `RPKSampler` `use_base=True` 修正: BASE テキストが正常にエンコードされるよう修正（前回の修正で null になっていた問題）
+- 全 sampler/detailer: `patches.clear()` を `patches = {}` に置換し shared dict 変異を防止
+- 全 sampler/detailer: sampling 前に `unpatch_model()` を明示的に呼び出し stale LowVramPatch を解放
+- `RPRegionalDetailerZImage`: LoRA モデルを inpaint ループ前に事前ビルドするよう変更
+- `RPRegionalDetailerZImage`: 常に `model.clone()` で fresh base を使用しクロスラン patch 汚染を防止
+
+**変更**
+- `core/prompt_parser.py`: `subprompts_raw` が col のみを含むよう変更（common は含まない）
+- `core/lora_manager.py`: `setup()`、`prebuild_cache()`、`get_model_for_division()` に `lora_offset` パラメータを追加
+- `RPKSampler`: common テキストを CLIP エンコード前に各 DIV に 1 回だけ pre-merge（`_null_base` 戦略）
+
 
 ### v0.5.59 (2026-04-29)
 

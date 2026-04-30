@@ -4,7 +4,7 @@
 支持左右、上下、网格等多种分割方式。
 可用于 SDXL、Z-Image、Qwen 模型。
 
-**版本：0.5.59** | [GitHub](https://github.com/AISeDam/ComfyUI_RP_Cast)
+**版本：0.5.60** | [GitHub](https://github.com/AISeDam/ComfyUI_RP_Cast)
 
 ---
 
@@ -255,6 +255,26 @@ API Key 申请: https://aistudio.google.com/apikey
 ---
 
 ## 更新历史
+
+### v0.5.60 (2026-04-30)
+
+**Bug 修复**
+- 修复 `RPKSampler` `use_base=False`: BASE 块文本(nolora_list[0])未正确跳过，导致区域映射错误
+- 修复 `RPKSampler` `use_base=False`: 注入 null BASE anchor（空文本, strength=0.0）防止 COL 间 bleeding
+- 修复 `RPKSampler` `use_base=False`: COL conditioning strength 强制为 1.0（use_base=False 时忽略 base_ratio）
+- 修复 `RPKSampler` `use_base=False`: 应用 exclusive area 边界防止区域 bleed
+- 修复 `RPKSampler` col_lora_map 索引: 添加 `lora_offset` 使 use_base=False 时 LoRA 正确映射
+- 修复 `RPKSampler` `use_base=True`: BASE 文本现在正常编码（上次修复中错误设为 null 的问题）
+- 全 sampler/detailer: `patches.clear()` 替换为 `patches = {}` 防止共享 dict 变异
+- 全 sampler/detailer: sampling 前显式调用 `unpatch_model()` 释放残留 LowVramPatch
+- `RPRegionalDetailerZImage`: LoRA 模型改为在 inpaint 循环前预构建（防止循环内 object_patch 堆叠）
+- `RPRegionalDetailerZImage`: 始终使用 `model.clone()` 作为 fresh base 防止跨 run patch 污染
+
+**变更**
+- `core/prompt_parser.py`: `subprompts_raw` 现在只包含 col 文本（不含 common）
+- `core/lora_manager.py`: `setup()`、`prebuild_cache()`、`get_model_for_division()` 添加 `lora_offset` 参数
+- `RPKSampler`: CLIP 编码前将 common 文本 pre-merge 到各 DIV，仅执行一次（`_null_base` 策略）
+
 
 ### v0.5.59 (2026-04-29)
 

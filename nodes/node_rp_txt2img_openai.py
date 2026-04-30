@@ -1,8 +1,6 @@
 """
 RP Txt2Img (OpenAI) - Regional Prompter to GPT Image API
-Converts ADDCOMM/ADDBASE/ADDCOL/ADDROW prompt syntax to natural language
-and generates images via OpenAI Image Generation API.
-API: https://platform.openai.com/docs/api-reference/images
+Version: 0.5.59
 """
 from __future__ import annotations
 import json, urllib.request, urllib.error
@@ -16,7 +14,7 @@ from ._rp_txt2img_common import (
 # ComfyUI Node Class
 # ══════════════════════════════════════════════════════════════════════════════
 class RPTxt2ImgOpenAI:
-    """RP 프롬프트를 GPT Image-1 API로 전달해 이미지를 생성하는 노드."""
+    """Generate images from RP prompts via OpenAI GPT Image API."""
 
     CATEGORY = "RP Cast"
 
@@ -29,7 +27,7 @@ class RPTxt2ImgOpenAI:
                 "prompt":  ("STRING", {
                     "multiline": True,
                     "default": "",
-                    "tooltip": "ADDCOMM/ADDBASE/ADDCOL/ADDROW 포함 RP 프롬프트 또는 일반 프롬프트",
+                    "tooltip": "RP prompt with ADDCOMM/ADDBASE/ADDCOL/ADDROW syntax, or plain text.",
                 }),
                 "size":    (["1024x1024", "1536x1024", "1024x1536", "auto"], {"default": "1536x1024"}),
                 "quality": (["auto", "high", "medium", "low"], {"default": "high"}),
@@ -38,12 +36,12 @@ class RPTxt2ImgOpenAI:
             "optional": {
                 "regional_col_n_row": ("RP_REGIONS", {
                     "tooltip": (
-                        "RPRatioParser의 regional_col_n_row 출력과 연결.\n"
-                        "미연결 시: ADDROW 유무로 자동 판단. ADDROW 없으면 Horizontal(1D) 기본값."
+                        "Connect regional_col_n_row output from RPRatioParser.\n"
+                        "If not connected: auto-detected from ADDROW presence (default: Horizontal)."
                     ),
                 }),
                 "divide_mode": ("RP_DIV_MODE", {
-                    "tooltip": "RP Prompt Parser의 divide_mode 출력과 연결합니다.",
+                    "tooltip": "Connect divide_mode output from RPPromptParser.",
                 }),
                 "background": (["auto", "transparent", "opaque"], {"default": "auto"}),
             },
@@ -72,8 +70,8 @@ class RPTxt2ImgOpenAI:
         api_key = _get_setting("ComfyUI-RP-Cast.Configuration.openai_api_key").strip()
         if not api_key:
             raise RuntimeError(
-                "OpenAI API Key가 설정되지 않았습니다.\n"
-                "Settings > ComfyUI-RP-Cast > Configuration > openai_api_key 에서 설정하세요."
+                "OpenAI API Key is not set.\n"
+                "Settings > ComfyUI-RP-Cast > Configuration > openai_api_key"
             )
 
         # Extract col_n_row string from RP_REGIONS
@@ -97,7 +95,7 @@ class RPTxt2ImgOpenAI:
                 if debug:
                     print(f"[RPTxt2ImgOpenAI] RP_REGIONS → {n_rows}rows x {n_cols}cols  mode={divide_mode}")
             except Exception as e:
-                print(f"[RPTxt2ImgOpenAI] regional_col_n_row 파싱 실패: {e}")
+                print(f"[RPTxt2ImgOpenAI] regional_col_n_row parse failed: {e}")
 
         # Convert prompt
         if _is_rp_prompt(prompt):
@@ -138,7 +136,7 @@ class RPTxt2ImgOpenAI:
         except urllib.error.HTTPError as e:
             raise RuntimeError(f"OpenAI API Error {e.code}: {e.read().decode()}")
 
-        # Decode base64 → Tensor
+        # base64 → Tensor
         tensors = []
         for item in data.get("data", []):
             b64 = item.get("b64_json", "")
@@ -150,7 +148,7 @@ class RPTxt2ImgOpenAI:
                 tensors.append(tensor)
 
         if not tensors:
-            raise RuntimeError("API 응답에 이미지 데이터가 없습니다.")
+            raise RuntimeError("API response contains no image data.")
 
         return (torch.cat(tensors, dim=0),)
 

@@ -688,6 +688,8 @@ class RPRegionalDetailerZImage:
         debug_tensor = torch.from_numpy(debug_np.astype(np.float32)/255.0).unsqueeze(0)
 
         # ── 8. Prepare ModelSamplingAuraFlow(shift) ────────────
+        # Use model directly without clone (Impact Pack pattern)
+        # Cloning causes LowVramPatch accumulation on every run
         _cloned = False
         model_shifted = model
         if _ZImageAuraFlow is not None:
@@ -707,6 +709,24 @@ class RPRegionalDetailerZImage:
 
         device  = mm.get_torch_device()
         result_img = img_tensor.clone()
+
+        # Pre-build per-COL model
+        # No clone when no LoRA (Impact Pack pattern) → prevents LowVramPatch accumulation
+        _col_models: dict = {}
+        for _ci in list(matched.keys()):
+            _pidx = _ci + start_i
+            _loras = col_lora_map.get(_pidx, {}) if col_lora_map else {}
+            if _loras and _COMFY_OK:
+                try:
+                    from core.lora_manager import _apply_loras as _al
+                    _m, _ = _al(model_shifted, clip, _loras)
+                    _col_models[_ci] = _m
+                except Exception as _e:
+                    _dbg(f"  [LoRA] apply failed col {_ci}: {_e} → base model")
+                    _col_models[_ci] = model_shifted
+            else:
+                # No LoRA: use model_shifted directly (no clone)
+                _col_models[_ci] = model_shifted
 
         # ── 9. Inpaint per matched COL ──────────────────────────
         for col_i, m_i in matched.items():
@@ -798,10 +818,10 @@ class RPRegionalDetailerZImage:
                 cond, pooled = _enc(clip, tok)
             positive_cond = [[cond, {"pooled_output": pooled, "cross_attn": cond}]]
 
-            # Apply LoRA
+            # Use pre-built model (LoRA applied before loop)
+            sample_model = _col_models.get(col_i, model_shifted)
             pidx = col_i + start_i
-            sample_model = model_shifted
-            loras_for_col = col_lora_map.get(pidx, {})
+            loras_for_col = col_lora_map.get(pidx, {}) if col_lora_map else {}
             if loras_for_col and _COMFY_OK:
                 from core.lora_manager import _apply_loras
                 sample_model, _ = _apply_loras(model_shifted, clip, loras_for_col)
@@ -841,6 +861,11 @@ class RPRegionalDetailerZImage:
                     mask_t.float(), size=(lh, lw), mode="bilinear", align_corners=False
                 ).squeeze(0).to(latent_crop.device)
 
+            # Unpatch before sampling to clear stale LowVramPatch registrations
+            try:
+                sample_model.unpatch_model()
+            except Exception:
+                pass
             out = comfy.sample.sample(
                 model=sample_model, noise=noise,
                 steps=steps, cfg=cfg,
@@ -883,12 +908,9 @@ class RPRegionalDetailerZImage:
             # Release model reference used for sampling
             try:
                 if sample_model is not model_shifted:
-                    if hasattr(sample_model, 'patches'):
-                        sample_model.patches.clear()
-                    if hasattr(sample_model, 'object_patches'):
-                        sample_model.object_patches.clear()
-                    if hasattr(sample_model, 'object_patches_backup'):
-                        sample_model.object_patches_backup.clear()
+                    sample_model.patches = {}
+                    sample_model.object_patches = {}
+                    sample_model.object_patches_backup = {}
                     del sample_model
                 del latent_crop, out_lat, positive_cond
                 del inpaint_img, inpaint_t, inpaint_np, inpaint_down
@@ -898,20 +920,29 @@ class RPRegionalDetailerZImage:
         # Release model_shifted reference (prevent circular ref / memory leak)
         try:
             if _cloned and model_shifted is not model:
-                # Clear all patches to break circular references
-                if hasattr(model_shifted, 'patches'):
-                    model_shifted.patches.clear()
-                if hasattr(model_shifted, 'object_patches'):
-                    model_shifted.object_patches.clear()
-                if hasattr(model_shifted, 'object_patches_backup'):
-                    model_shifted.object_patches_backup.clear()
+                # Assign new empty dicts instead of clear()
+                # clear() mutates shared dict → corrupts original model.patches
+                model_shifted.patches = {}
+                model_shifted.object_patches = {}
+                model_shifted.object_patches_backup = {}
                 del model_shifted
+        except Exception:
+            pass
+        # Release _col_models to free lowvram patch references
+        try:
+            for _m in _col_models.values():
+                if _m is not model_shifted and _m is not model:
+                    _m.patches = {}
+                    _m.object_patches = {}
+                    _m.object_patches_backup = {}
+            _col_models.clear()
         except Exception:
             pass
         import gc; gc.collect()
         try:
             import comfy.model_management as _cmm
             _cmm.soft_empty_cache()
+            _cmm.cleanup_models()
         except Exception:
             pass
 

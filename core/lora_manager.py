@@ -1,7 +1,17 @@
 """
-Regional Prompter - LoRA Manager
-Manages per-division LoRA loading and caching for RP KSampler.
-Each region (BASE, DIV[0,0], DIV[0,1], ...) can have independent LoRA weights.
+Regional Prompter - LoRA Manager (P2)
+ComfyUI port based on AddNet/RP latent.py caching approach.
+
+Original design (A1111):
+  - _reload_loras_for_col(): LoRA switching per division
+  - cache key: str "rp_col_{idx}_{loras}" (type identifies cache state)
+  - cache hit: isinstance(key, str) and key == addnet_key
+
+ComfyUI port:
+  - Cannot replace LoRA weights directly (ModelPatcher based)
+  - Pre-build ModelPatcher clone per division
+  - Call separate apply_model per division in model_function_wrapper
+  - cache: {addnet_key_str: (model_patcher_clone, clip_clone)}
 """
 from __future__ import annotations
 import os
@@ -185,12 +195,13 @@ class LoRADivisionManager:
         self.step:    int = 0
 
     def setup(self, col_lora_map, division_count, base_model, base_clip,
-              div_label_fn=None):
+              div_label_fn=None, lora_offset=0):
         self.col_lora_map    = col_lora_map
         self.division_count  = division_count
         self._base_model     = base_model
         self._base_clip      = base_clip
         self._div_label_fn   = div_label_fn  # col_idx → "DIV[r,c]" or "BASE"
+        self._lora_offset    = lora_offset   # col_lora_map key = col_idx + lora_offset
         self.u_count         = 0
         self.step            = 0
         self._cache          = {}
@@ -220,7 +231,7 @@ class LoRADivisionManager:
 
         print("[RP LoRA] === Division LoRA cache build ===")
         for col_idx in range(self.division_count):
-            loras        = self.col_lora_map.get(col_idx, {})
+            loras        = self.col_lora_map.get(col_idx + self._lora_offset, {})
             addnet_key   = _make_addnet_key(loras)
             col_idx_key  = _make_col_idx_key(col_idx, loras)
             self._col_key_map[col_idx] = col_idx_key
@@ -250,7 +261,7 @@ class LoRADivisionManager:
 
         Returns: (model_patcher, clip_model)
         """
-        loras       = self.col_lora_map.get(col_idx, {})
+        loras       = self.col_lora_map.get(col_idx + self._lora_offset, {})
         addnet_key  = _make_addnet_key(loras)
         col_idx_key = self._col_key_map.get(col_idx)
         if col_idx_key is None:

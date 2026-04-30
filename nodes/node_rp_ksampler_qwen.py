@@ -387,6 +387,10 @@ class RPKSamplerQwen:
         # ── 7. Sampling ───────────────────────────────────
         print(f"\n[RPKSamplerQwen] sampling  steps={steps}  cfg={cfg}  denoise={denoise}")
         noise  = comfy.sample.prepare_noise(samples, seed, None)
+        try:
+            sample_model.unpatch_model()
+        except Exception:
+            pass
         output = comfy.sample.sample(
             model        = sample_model,
             noise        = noise,
@@ -424,23 +428,17 @@ class RPKSamplerQwen:
 
         # Release model reference (prevent circular ref / memory leak)
         try:
-            if hasattr(sample_model, 'patches'):
-                sample_model.patches.clear()
-            if hasattr(sample_model, 'object_patches'):
-                sample_model.object_patches.clear()
-            if hasattr(sample_model, 'object_patches_backup'):
-                sample_model.object_patches_backup.clear()
+            sample_model.patches = {}
+            sample_model.object_patches = {}
+            sample_model.object_patches_backup = {}
             del sample_model
         except Exception:
             pass
         try:
             if _cloned and model_shifted is not model:
-                if hasattr(model_shifted, 'patches'):
-                    model_shifted.patches.clear()
-                if hasattr(model_shifted, 'object_patches'):
-                    model_shifted.object_patches.clear()
-                if hasattr(model_shifted, 'object_patches_backup'):
-                    model_shifted.object_patches_backup.clear()
+                model_shifted.patches = {}
+                model_shifted.object_patches = {}
+                model_shifted.object_patches_backup = {}
                 del model_shifted
         except Exception:
             pass

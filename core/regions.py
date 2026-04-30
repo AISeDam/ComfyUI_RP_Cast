@@ -1,9 +1,9 @@
 """
 Regional Prompter - Region Geometry Core
-Builds spatial region definitions and binary filter tensors
-from divide_ratio and divide_mode settings.
-Pure Python/Torch — no gradio or webui dependencies.
+Refined from SD-WebUI regions.py for ComfyUI.
+Removed gradio/modules dependencies; pure Python/Torch only.
 """
+
 import torch
 
 # ──────────────────────────────────────────────

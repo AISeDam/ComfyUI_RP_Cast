@@ -498,6 +498,11 @@ class RPKSamplerZImage:
         print(f"\n[RPKSamplerZImage] sampling start  "
               f"steps={steps}  cfg={cfg}  shift={shift}  denoise={denoise}")
         noise  = comfy.sample.prepare_noise(samples, seed, None)
+        # Unpatch before sampling to clear stale LowVramPatch registrations
+        try:
+            sample_model.unpatch_model()
+        except Exception:
+            pass
         output = comfy.sample.sample(
             model        = sample_model,
             noise        = noise,
@@ -532,30 +537,28 @@ class RPKSamplerZImage:
 
         # Release model reference (prevent circular ref / memory leak)
         try:
-            if hasattr(sample_model, 'patches'):
-                sample_model.patches.clear()
-            if hasattr(sample_model, 'object_patches'):
-                sample_model.object_patches.clear()
-            if hasattr(sample_model, 'object_patches_backup'):
-                sample_model.object_patches_backup.clear()
+            # Use assignment instead of clear() to avoid mutating shared patches dict
+            # clear() modifies the original dict shared with model → corrupts model.patches
+            sample_model.patches = {}
+            sample_model.object_patches = {}
+            sample_model.object_patches_backup = {}
             del sample_model
         except Exception:
             pass
         try:
             if _cloned and model_shifted is not model:
-                if hasattr(model_shifted, 'patches'):
-                    model_shifted.patches.clear()
-                if hasattr(model_shifted, 'object_patches'):
-                    model_shifted.object_patches.clear()
-                if hasattr(model_shifted, 'object_patches_backup'):
-                    model_shifted.object_patches_backup.clear()
+                model_shifted.patches = {}
+                model_shifted.object_patches = {}
+                model_shifted.object_patches_backup = {}
                 del model_shifted
         except Exception:
             pass
         import gc; gc.collect()
         try:
             import comfy.model_management as _cmm
+            # Force unload cached lowvram patches to prevent accumulation
             _cmm.soft_empty_cache()
+            _cmm.cleanup_models()
         except Exception:
             pass
 
