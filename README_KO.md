@@ -225,35 +225,30 @@ API Key 발급: https://aistudio.google.com/apikey
   - 변환 완료 후 모델 VRAM 해제 (`keep_alive=0`)
   - Ollama 출력 이상 시 WD14 태그 매칭 fallback (미설치 시 자동 다운로드)
   - 규격외 RP 구조(ADDCOMM/ADDBASE 누락 또는 중복) 시 1회 retry
-  - `RPPromptParser`에 `NL_prompts` STRING output 추가 (CLIP encode 직접 연결용)
+- `RPPromptParser`: `NL_prompts` STRING output 추가 (CLIP encode 직접 연결용)
 - `RPKSampler (SDXL)`: `steps_add_per_div`, `cfg_add_per_div` 위젯 추가 (`lora_weight_adj` 위)
   - steps = steps + (n_div × steps_add_per_div), cfg = cfg + (n_div × cfg_add_per_div)
+  - 기본값 `0` — 미사용 시 동작 없음
 - `RPRegionalDetailer` + `RPRegionalDetailerZImage`: 탈락 인물 fallback 인페인팅
   - COL에 미배정된 인물을 base 프롬프트(common + base_text)로 인페인팅
+  - 메인 COL 루프와 동일한 crop→upscale→VAE encode→sample→blend 파이프라인 적용
 - `RPRegionalDetailer`: ZImage 방식 전체 이미지 1회 YOLO + bbox 중심 좌표 기반 구역 분류로 전환
 
 **변경**
 - `RP KSampler` 표시명 → `RP KSampler (SDXL)`
 - `RP Regional Detailer` 표시명 → `RP Regional Detailer (SDXL)`
 - `RPRegionalDetailer`: 구역 할당 방식을 bbox 중심 좌표 vs divide_ratio 경계 비교로 변경 (ZImage 방식)
+- `RP Converter`: 기본 모델 `gemma3:12b`로 변경; System Prompt를 PART A / PART B 명시적 분리 형식으로 재구성
+- `RP Converter`: COSPLAY/인물 키워드 기준으로 Python이 입력을 사전 분리 후 전달
+- `RP Converter`: 모든 모델에 `think: false` 적용; `qwen3`는 추가로 `/no_think` 지시어 자동 추가
+- `RP Converter`: 모든 API 페이로드에 `context: []` 추가 — 매 요청마다 대화 이력 소거
+- `RP Converter`: retry 검증에 ADDCOMM/ADDBASE 중복 감지 추가 (누락 외 중복도 retry 트리거)
 
 **제거**
 - `RP KSampler (Z-Image)` 노드 제거
 - `RP KSampler (Qwen)` 노드 제거
 - `RP KSampler (FLUX.2)` 노드 제거
 - 미사용 stub 파일 제거: `node_rp_conditioning.py`, `node_rp_filter_maker.py`, `node_rp_ratio_parser.py`
-
-- `RP Converter`: 기본 모델을 `gemma3:12b`로 변경 (llama3.2:3b 대비 지시 준수 성능 우수)
-- `RP Converter`: System Prompt를 gemma3 전용으로 재구성 — PART A / PART B 명시적 분리 형식 + EXAMPLE 포함
-- `RP Converter`: User Prompt에서 COSPLAY/인물 키워드 기준으로 Python이 먼저 입력을 분리하여 전달, 섹션 간 태그 혼용 문제 해소
-- `RP Converter`: 스트리밍/비스트리밍 모든 API 페이로드에 `think: false` 적용
-- `RP Converter`: `qwen3` 모델 사용 시 User Prompt 앞에 `/no_think` 지시어 자동 추가 (이중 보장)
-- `RP Converter`: 모든 API 페이로드에 `context: []` 추가 — 매 요청마다 대화 이력 완전 소거, 이전 프롬프트 누수 방지
-- `RP Converter`: retry 유효성 검사에 `ADDCOMM` / `ADDBASE` 중복 감지 추가 (누락 외 중복도 retry 트리거)
-- `RP Converter`: retry 힌트 메시지에 "ADDCOMM must appear EXACTLY ONCE / ADDBASE must appear EXACTLY ONCE" 명시
-- `RP Converter`: `_WD14_TAG_SET = None` 모듈 레벨 선언 추가 (WD14 fallback 경로의 `NameError` 수정)
-- `RPKSampler (SDXL)`: `steps_add_per_div` / `cfg_add_per_div` 기본값 `0` 설정 (미사용 시 동작 없음)
-- `RPRegionalDetailer (SDXL)` / `RPRegionalDetailerZImage`: fallback 인페인팅을 메인 COL 루프와 동일한 crop→upscale→VAE encode→sample→blend 파이프라인으로 개선
 
 ### v0.5.60 (2026-04-30)
 

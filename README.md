@@ -258,11 +258,13 @@ Generates images using the [xAI Grok Image Generation API](https://docs.x.ai/dev
   - Model unloaded from VRAM after conversion (`keep_alive=0`)
   - WD14 tag-matching fallback when Ollama output is invalid (auto-downloaded if missing)
   - 1-retry on invalid RP structure (missing or duplicate ADDCOMM/ADDBASE)
-  - `NL_prompts` STRING output added to `RPPromptParser` for direct CLIP encode use
+- `RPPromptParser`: `NL_prompts` STRING output added for direct CLIP encode use
 - `RPKSampler (SDXL)`: `steps_add_per_div` and `cfg_add_per_div` widgets added above `lora_weight_adj`
   - Total steps = steps + (n_div × steps_add_per_div); total cfg = cfg + (n_div × cfg_add_per_div)
+  - Default value `0` — no-op when unused
 - `RPRegionalDetailer` + `RPRegionalDetailerZImage`: fallback inpainting for displaced persons
   - Persons not selected for any COL region are inpainted with base prompt (common + base_text)
+  - Uses full crop→upscale→VAE encode→sample→blend pipeline (same as main COL loop)
 - `RPRegionalDetailer`: switched to ZImage-style single full-image YOLO pass with bbox-center region assignment
   - Replaces per-region crop YOLO; supports Horizontal/Vertical and 2D grid layouts
 
@@ -270,24 +272,17 @@ Generates images using the [xAI Grok Image Generation API](https://docs.x.ai/dev
 - `RP KSampler` display name changed to `RP KSampler (SDXL)`
 - `RP Regional Detailer` display name changed to `RP Regional Detailer (SDXL)`
 - `RPRegionalDetailer`: region assignment now uses bbox center coordinate vs divide_ratio boundaries (ZImage pattern)
+- `RP Converter`: default model set to `gemma3:12b`; System Prompt restructured to PART A / PART B explicit split format
+- `RP Converter`: User Prompt pre-splits input at COSPLAY/person keyword boundary in Python before passing to model
+- `RP Converter`: `think: false` applied to all models; `qwen3` additionally receives `/no_think` directive
+- `RP Converter`: `context: []` added to all API payloads — conversation history cleared on every request
+- `RP Converter`: retry validation extended to detect duplicate ADDCOMM/ADDBASE (in addition to missing)
 
 **Removed**
 - `RP KSampler (Z-Image)` node removed (use `RPRegionalDetailerZImage` + standard KSampler instead)
 - `RP KSampler (Qwen)` node removed
 - `RP KSampler (FLUX.2)` node removed
 - Deprecated stub files removed: `node_rp_conditioning.py`, `node_rp_filter_maker.py`, `node_rp_ratio_parser.py`
-
-- `RP Converter`: switched default model to `gemma3:12b` (superior instruction following vs llama3.2:3b)
-- `RP Converter`: System Prompt restructured for `gemma3` — PART A / PART B explicit split format with EXAMPLE
-- `RP Converter`: User Prompt now pre-splits input at COSPLAY/person keyword boundary in Python before passing to model, eliminating cross-section tag contamination
-- `RP Converter`: `think: false` applied to all models in both streaming and non-streaming payloads
-- `RP Converter`: `qwen3` models additionally receive `/no_think` directive prefix in User Prompt for double assurance
-- `RP Converter`: `context: []` added to all API payloads — conversation history cleared on every request to prevent prompt leakage from prior runs
-- `RP Converter`: retry validation extended to detect duplicate `ADDCOMM` / `ADDBASE` keywords (in addition to missing ones)
-- `RP Converter`: retry hint message now explicitly states "ADDCOMM must appear EXACTLY ONCE / ADDBASE must appear EXACTLY ONCE"
-- `RP Converter`: `_WD14_TAG_SET = None` module-level declaration added (fixes `NameError` on WD14 fallback path)
-- `RPKSampler (SDXL)`: `steps_add_per_div` / `cfg_add_per_div` default value set to `0` (no-op when unused)
-- `RPRegionalDetailer (SDXL)` / `RPRegionalDetailerZImage`: fallback inpainting now uses full crop→upscale→VAE encode→sample→blend pipeline (same as main COL loop) instead of simplified path
 
 ### v0.5.60 (2026-04-30)
 

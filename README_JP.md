@@ -293,34 +293,30 @@ API Key 取得: https://aistudio.google.com/apikey
   - 変換完了後にVRAMからモデルをアンロード（`keep_alive=0`）
   - Ollama出力が無効な場合はWD14タグマッチングにフォールバック（未インストール時は自動ダウンロード）
   - 無効なRP構造（ADDCOMM/ADDBASE欠落または重複）時に1回リトライ
-  - `RPPromptParser`に`NL_prompts` STRING出力を追加（CLIPエンコードへの直接接続用）
+- `RPPromptParser`: `NL_prompts` STRING出力を追加（CLIPエンコードへの直接接続用）
 - `RPKSampler (SDXL)`: `steps_add_per_div`、`cfg_add_per_div`ウィジェットを追加（`lora_weight_adj`の上）
   - steps = steps + (n_div × steps_add_per_div), cfg = cfg + (n_div × cfg_add_per_div)
+  - デフォルト値`0` — 未使用時は動作なし
 - `RPRegionalDetailer` + `RPRegionalDetailerZImage`: 落選人物のフォールバックインペインティング
   - COLに未割当の人物をベースプロンプト（common + base_text）でインペインティング
+  - メインCOLループと同じcrop→upscale→VAEエンコード→sample→blendパイプラインを適用
 - `RPRegionalDetailer`: ZImageスタイルの全体画像1回YOLO + bboxセンター座標による領域分類に切り替え
 
 **変更**
 - `RP KSampler`表示名 → `RP KSampler (SDXL)`
 - `RP Regional Detailer`表示名 → `RP Regional Detailer (SDXL)`
 - `RPRegionalDetailer`: 領域割当をbboxセンター座標 vs divide_ratio境界比較に変更（ZImageパターン）
+- `RP Converter`: デフォルトモデルを`gemma3:12b`に変更; System PromptをPART A / PART B明示的分割形式に再構成
+- `RP Converter`: COSPLAY/人物キーワードでPythonが入力を事前分割して渡す
+- `RP Converter`: 全モデルに`think: false`適用; `qwen3`はさらに`/no_think`指示語を自動追加
+- `RP Converter`: 全APIペイロードに`context: []`追加 — 毎リクエストごとに会話履歴を消去
+- `RP Converter`: retry検証にADDCOMM/ADDBASE重複検出を追加（欠落に加えて重複もretryトリガー）
 
 **削除**
 - `RP KSampler (Z-Image)`ノード削除
 - `RP KSampler (Qwen)`ノード削除
 - `RP KSampler (FLUX.2)`ノード削除
 - 未使用stubファイル削除: `node_rp_conditioning.py`、`node_rp_filter_maker.py`、`node_rp_ratio_parser.py`
-
-- `RP Converter`: デフォルトモデルを`gemma3:12b`に変更（llama3.2:3b比で指示遵守性能が優れている）
-- `RP Converter`: System PromptをGemma3専用に再構成 — PART A / PART B明示的分割形式＋EXAMPLE付き
-- `RP Converter`: User PromptでCOSPLAY/人物キーワード基準でPythonが先に入力を分割して渡すことで、セクション間タグ混用問題を解消
-- `RP Converter`: ストリーミング/非ストリーミング全APIペイロードに`think: false`を適用
-- `RP Converter`: `qwen3`モデル使用時はUser Prompt冒頭に`/no_think`指示語を自動追加（二重保証）
-- `RP Converter`: 全APIペイロードに`context: []`追加 — 毎リクエストごとに会話履歴を完全消去し、以前のプロンプト漏洩を防止
-- `RP Converter`: retry検証に`ADDCOMM`/`ADDBASE`重複検出を追加（欠落に加えて重複もretryトリガー）
-- `RP Converter`: retryヒントメッセージに「ADDCOMM must appear EXACTLY ONCE / ADDBASE must appear EXACTLY ONCE」を明示
-- `RPKSampler (SDXL)`: `steps_add_per_div`/`cfg_add_per_div`デフォルト値を`0`に設定（未使用時は動作なし）
-- `RPRegionalDetailer (SDXL)`/`RPRegionalDetailerZImage`: fallbackインペインティングをメインCOLループと同じcrop→upscale→VAEエンコード→sample→blendパイプラインに改善
 
 ### v0.5.60 (2026-04-30)
 
