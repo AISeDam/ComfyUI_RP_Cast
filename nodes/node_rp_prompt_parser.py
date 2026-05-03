@@ -111,6 +111,95 @@ def _auto_aratios(prompt: str, divide_mode: str = "Horizontal") -> str:
 #    - use_base / use_common toggle
 #    - aratios auto output
 # ══════════════════════════════════════════════════════
+
+import re as _re
+
+def _pos_label_nl(col_idx, row_idx, n_cols, n_rows):
+    H_MAP = {1:["CENTER"],2:["LEFT","RIGHT"],3:["LEFT","CENTER","RIGHT"],
+             4:["LEFT","SECOND LEFT","FIRST RIGHT","RIGHT"],
+             5:["MORE LEFT","LEFT","CENTER","RIGHT","MORE RIGHT"]}
+    V_MAP = {1:["MID"],2:["UPPER","LOWER"],3:["UPPER","MID","LOWER"],
+             4:["UPPER","UPPER MID","LOWER MID","LOWER"],
+             5:["UPPER","UPPER MID","MID","LOWER MID","LOWER"]}
+    H = H_MAP.get(n_cols,[f"COL{i}" for i in range(n_cols)])
+    V = V_MAP.get(n_rows,[f"ROW{i}" for i in range(n_rows)])
+    h = H[col_idx] if col_idx < len(H) else f"COL{col_idx}"
+    v = V[row_idx] if row_idx < len(V) else f"ROW{row_idx}"
+    if n_rows == 1: return h
+    if n_cols == 1: return v
+    return f"{v} {h}"
+
+_RE_LORA_NL = _re.compile(r"<lora:[^>]+>", _re.IGNORECASE)
+_CNT_NL = _re.compile(
+    r"\b\d+\s*(?:boy|girl|boys|girls|man|woman|men|women|person|people)s?\b",
+    _re.IGNORECASE)
+
+def _strip_nl(t):
+    t = _CNT_NL.sub("", t)
+    t = _re.sub(r",\s*,", ",", t)
+    t = _re.sub(r"\s{2,}", " ", t)
+    return _re.sub(r"^[\s,]+|[\s,]+$", "", t).strip()
+
+def _build_nl_prompt(nolora, common_text, col_texts, has_base,
+                     divide_mode, row_structure, is_2d):
+    """Build ZImage-style natural language merged prompt."""
+    import re
+
+    RE_LORA = _re.compile(r"<lora:[^>]+>", _re.IGNORECASE)
+
+    base_text = RE_LORA.sub("", col_texts[0]).strip() if has_base and col_texts else ""
+    div_start = 1 if has_base else 0
+
+    # Build div grid indices
+    div_indices = []
+    n_cols_total = 1
+    n_rows_total = 1
+    if is_2d and row_structure:
+        _is_v = "Ver" in (divide_mode or "Horizontal")
+        if not _is_v:
+            n_rows_total = len(row_structure)
+            n_cols_total = max(row_structure) if row_structure else 1
+            for ri, nc in enumerate(row_structure):
+                for ci in range(nc):
+                    div_indices.append((ci, ri))
+        else:
+            n_cols_total = len(row_structure)
+            n_rows_total = max(row_structure) if row_structure else 1
+            for ci, nr in enumerate(row_structure):
+                for ri in range(nr):
+                    div_indices.append((ci, ri))
+    else:
+        n_div = max(0, len(nolora) - div_start)
+        n_cols_total = n_div
+        for i in range(n_div):
+            div_indices.append((i, 0))
+
+    div_phrases = []
+    for li, (ci, ri) in enumerate(div_indices):
+        src_i = li + div_start
+        if src_i >= len(nolora): break
+        raw = col_texts[src_i] if src_i < len(col_texts) else nolora[src_i]
+        txt = RE_LORA.sub("", raw).strip()
+        if not txt: continue
+        label = _pos_label_nl(ci, ri, n_cols_total, n_rows_total)
+        div_phrases.append(f"({txt}) on the {label.lower()}")
+
+    if   len(div_phrases) == 0: div_sentence = ""
+    elif len(div_phrases) == 1: div_sentence = div_phrases[0]
+    elif len(div_phrases) == 2:
+        div_sentence = f"{div_phrases[0]} and {div_phrases[1]}"
+    else:
+        div_sentence = ", ".join(div_phrases[:-1]) + f", and {div_phrases[-1]}"
+
+    common_scene = _strip_nl(common_text) if common_text else ""
+    parts = [p for p in [common_scene, div_sentence] if p]
+    scene_line = ", ".join(parts)
+
+    if scene_line and base_text:
+        return f"{scene_line}, {base_text}"
+    return scene_line or base_text or " ".join(t for t in nolora if t.strip())
+
+
 class RPPromptParser:
     CATEGORY = "Regional Prompter"
     cnr_id  = "ComfyUI_RP_Cast"
@@ -144,8 +233,8 @@ class RPPromptParser:
             "optional": {},
         }
 
-    RETURN_TYPES  = ("RP_SUBPROMPTS", "RP_LORA_MAP", "RP_DIV_RATIO", "RP_DIV_MODE", "STRING")
-    RETURN_NAMES  = ("regional_prompts_nolora", "regional_lora_map", "divide_ratio", "divide_mode", "original_prompts")
+    RETURN_TYPES  = ("RP_SUBPROMPTS", "RP_LORA_MAP", "RP_DIV_RATIO", "RP_DIV_MODE", "STRING", "STRING")
+    RETURN_NAMES  = ("regional_prompts_nolora", "regional_lora_map", "divide_ratio", "divide_mode", "original_prompts", "NL_prompts")
     FUNCTION      = "execute"
 
     def execute(self, prompt, divide_mode="Horizontal", divide_ratio="", auto_div_calc="auto", debug=False):
@@ -238,7 +327,13 @@ class RPPromptParser:
             "has_base":      _auto_usebase,   # ADDBASE detection result
             "has_common":    _auto_usecom,    # ADDCOMM detection result
         }
-        return (prompts_data, lora_map, final_ratio, divide_mode, prompt)
+        # NL_prompts: natural language merged prompt for FLUX.2/ZImage samplers
+        nl_prompt = _build_nl_prompt(
+            nolora, common_text, col_texts, _auto_usebase, divide_mode,
+            _2d_struct, _is_2d
+        )
+        _dbg(f"  [NL_prompts] {nl_prompt[:120]}")
+        return (prompts_data, lora_map, final_ratio, divide_mode, prompt, nl_prompt)
 
 
 # ══════════════════════════════════════════════════════

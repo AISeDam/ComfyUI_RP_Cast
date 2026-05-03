@@ -52,13 +52,19 @@ ComfyUI を再起動すると 8 つのノードが自動的に表示されます
 | `RPPromptParser` | 領域ごとのプロンプトを記述し、自動的に分割します |
 | `RPRatioParser` | `divide_ratio`、`divide_mode`、`threshold` を入力として受け取り、領域データ（`regional_col_n_row`）と threshold を出力します。RPPromptParser の後に接続します |
 
-### ステップ 2 — モデルに合ったサンプラーを選択
+### ステップ 2 — モデルに合ったサンプラーとディテイラーを選択
 
 | 使用モデル | サンプラー | ディテイラー |
 |-----------|-----------|------------|
-| SDXL / SD 1.x | `RPKSampler` | `RPRegionalDetailer` |
-| Z-Image | `RPKSamplerZImage` | `RPRegionalDetailerZImage` |
-| Qwen | `RPKSamplerQwen` | `RPRegionalDetailerQwen` |
+| SDXL / SD 1.x | `RP KSampler (SDXL)` | `RP Regional Detailer (SDXL)` |
+| Z-Image / Qwen | *(ComfyUI標準KSamplerを使用)* | `RP Regional Detailer (Z-Image)` |
+| Qwen | *(ComfyUI標準KSamplerを使用)* | `RP Regional Detailer (Qwen)` |
+
+### オプション — RP Converter
+
+| ノード | 役割 |
+|--------|------|
+| `RP Converter` | 自然言語のシーン説明をOllama LLM（`gemma3:12b`推奨）でRP構造プロンプトに変換します。COSPLAY/人物キーワードで入力を自動分割し、スタイルキーワード追加と領域ごとのLoRA自動タグ機能を含みます。 |
 
 ---
 
@@ -165,13 +171,30 @@ YOLO モデルが必要です（例：`bbox/person_yolov8m-seg.pt`）。`models/
 
 | ノード | 対象モデル |
 |--------|----------|
-| `RPRegionalDetailer` | SDXL / SD1.x |
-| `RPRegionalDetailerZImage` | Z-Image |
-| `RPRegionalDetailerQwen` | Qwen |
+| `RP Regional Detailer (SDXL)` | SDXL / SD1.x |
+| `RP Regional Detailer (Z-Image)` | Z-Image / Qwen |
+| `RP Regional Detailer (Qwen)` | Qwen（Z-Imageディテイラーに委譲） |
+
+**フォールバックインペインティング（全ディテイラー共通）**
+
+同じ領域で複数の人物が検出された場合、最大面積の人物がCOL領域プロンプトを担当します。
+残りの落選人物は**ベースプロンプト**（`COMMON + BASE text`）でインペインティングされます。
 
 ### 各 Detailer の動作メカニズム
 
-**RPRegionalDetailer** (SDXL / SD1.x)
+**RP Regional Detailer (SDXL)**
+
+1. **全体画像に対してYOLOを1回実行**し、各人物のbboxセンター座標を
+   divide_ratio境界と比較して領域を分類します（ZImageスタイル）。
+2. 同じ領域に複数の人物がいる場合は最大面積の人物が優先配置され、
+   残りはベースプロンプトのフォールバックインペインティング対象になります。
+3. 各bboxに対して: マスク膨張(dilation) + ブラー → cropアップスケール(LANCZOS)
+   → VAEエンコード → 領域プロンプト(COMMON + BASE + DIV組み合わせ)でインペインティング
+   → VAEデコード → マスクブレンドで合成します。
+4. 各領域インペインティング直前に該当領域のLoRAを個別ロードするため、
+   **領域ごとのLoRA独立適用がこの段階で完全に実現**されます。
+
+*(旧: RPRegionalDetailer)*
 
 1. **領域マスクごとに YOLO を個別実行** — 各領域エリアを切り取って YOLO を個別に適用し、
    該当領域内で最大の人物の bbox を選択します。
@@ -258,6 +281,46 @@ API Key 取得: https://aistudio.google.com/apikey
 ---
 
 ## アップデート履歴
+
+### v0.6.00 (2026-05-03)
+
+**追加**
+- `RP Converter` ノード: 自然言語のシーン説明をOllama LLMでRP構造プロンプトに変換
+  - `style_prompt`: Ollama変換後にADDCOMM～ADDBASE間にキーワードを追加
+  - `lora_directory` + `lora_auto_apply`: COLセクションごとにランダムLoRAを自動追加（トリガーワード付き、AGPスタイル）
+  - ComfyUI起動時にOllamaモデルリストを自動取得、未起動時はexecute時にリトライ
+  - `gemma3:12b`推奨; `llama3.2:3b`、`qwen3`もサポート（`qwen3`は`/no_think`指示語を自動適用）
+  - 変換完了後にVRAMからモデルをアンロード（`keep_alive=0`）
+  - Ollama出力が無効な場合はWD14タグマッチングにフォールバック（未インストール時は自動ダウンロード）
+  - 無効なRP構造（ADDCOMM/ADDBASE欠落または重複）時に1回リトライ
+  - `RPPromptParser`に`NL_prompts` STRING出力を追加（CLIPエンコードへの直接接続用）
+- `RPKSampler (SDXL)`: `steps_add_per_div`、`cfg_add_per_div`ウィジェットを追加（`lora_weight_adj`の上）
+  - steps = steps + (n_div × steps_add_per_div), cfg = cfg + (n_div × cfg_add_per_div)
+- `RPRegionalDetailer` + `RPRegionalDetailerZImage`: 落選人物のフォールバックインペインティング
+  - COLに未割当の人物をベースプロンプト（common + base_text）でインペインティング
+- `RPRegionalDetailer`: ZImageスタイルの全体画像1回YOLO + bboxセンター座標による領域分類に切り替え
+
+**変更**
+- `RP KSampler`表示名 → `RP KSampler (SDXL)`
+- `RP Regional Detailer`表示名 → `RP Regional Detailer (SDXL)`
+- `RPRegionalDetailer`: 領域割当をbboxセンター座標 vs divide_ratio境界比較に変更（ZImageパターン）
+
+**削除**
+- `RP KSampler (Z-Image)`ノード削除
+- `RP KSampler (Qwen)`ノード削除
+- `RP KSampler (FLUX.2)`ノード削除
+- 未使用stubファイル削除: `node_rp_conditioning.py`、`node_rp_filter_maker.py`、`node_rp_ratio_parser.py`
+
+- `RP Converter`: デフォルトモデルを`gemma3:12b`に変更（llama3.2:3b比で指示遵守性能が優れている）
+- `RP Converter`: System PromptをGemma3専用に再構成 — PART A / PART B明示的分割形式＋EXAMPLE付き
+- `RP Converter`: User PromptでCOSPLAY/人物キーワード基準でPythonが先に入力を分割して渡すことで、セクション間タグ混用問題を解消
+- `RP Converter`: ストリーミング/非ストリーミング全APIペイロードに`think: false`を適用
+- `RP Converter`: `qwen3`モデル使用時はUser Prompt冒頭に`/no_think`指示語を自動追加（二重保証）
+- `RP Converter`: 全APIペイロードに`context: []`追加 — 毎リクエストごとに会話履歴を完全消去し、以前のプロンプト漏洩を防止
+- `RP Converter`: retry検証に`ADDCOMM`/`ADDBASE`重複検出を追加（欠落に加えて重複もretryトリガー）
+- `RP Converter`: retryヒントメッセージに「ADDCOMM must appear EXACTLY ONCE / ADDBASE must appear EXACTLY ONCE」を明示
+- `RPKSampler (SDXL)`: `steps_add_per_div`/`cfg_add_per_div`デフォルト値を`0`に設定（未使用時は動作なし）
+- `RPRegionalDetailer (SDXL)`/`RPRegionalDetailerZImage`: fallbackインペインティングをメインCOLループと同じcrop→upscale→VAEエンコード→sample→blendパイプラインに改善
 
 ### v0.5.60 (2026-04-30)
 

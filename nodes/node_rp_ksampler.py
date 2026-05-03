@@ -68,6 +68,12 @@ class RPKSampler:
                 "base_ratio":   ("STRING",  {"default": "0.2",
                                              "tooltip": "BASE:REGION blend ratio. 0.2 → 20% BASE + 80% REGION. "
                                                         "Per-region: '0.2,0.3,0.5'"}),
+                "steps_add_per_div": ("INT", {"default": 0, "min": 0, "max": 20,
+                                                "tooltip": "Add steps per DIV region. "
+                                                           "Total steps = steps + (n_div × steps_add_per_div)"}),
+                "cfg_add_per_div": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 5.0, "step": 0.1,
+                                               "tooltip": "Add CFG per DIV region. "
+                                                          "Total cfg = cfg + (n_div × cfg_add_per_div)"}),
                 "lora_weight_adj": ("INT", {"default": 0, "min": 0, "max": 500,
                                                    "tooltip": "LoRA weight multiplier (%). "
                                                               "0=disabled, 100=original, 50=half, 200=double"}),
@@ -94,7 +100,9 @@ class RPKSampler:
                 seed, steps, cfg, sampler_name, scheduler, denoise,
                 divide_mode="Horizontal",
                 use_base=False, use_common=True,
-                base_ratio="0.2", lora_weight_adj=0, debug=False):
+                base_ratio="0.2",
+                steps_add_per_div=0, cfg_add_per_div=0.0,
+                lora_weight_adj=0, debug=False):
 
         _dbg = print if debug else lambda *a, **kw: None
         if not _COMFY_OK:
@@ -106,7 +114,9 @@ class RPKSampler:
 
         # Normalize internal variable names (backward compat)
         region_rows  = regional_col_n_row
-        col_lora_map = regional_lora_map if regional_lora_map else {}
+        # lora_weight_adj=0: skip LoRA entirely (empty map → _apply_loras not called)
+        col_lora_map = (regional_lora_map if regional_lora_map else {}) \
+                       if lora_weight_adj > 0 else {}
         mode         = divide_mode
 
         # LoRA weight multiplier: weight * (lora_weight_adj / 100)
@@ -253,11 +263,13 @@ class RPKSampler:
             col_texts    = nolora_list
             _is_2d       = False
             _row_struct  = []
+            _has_base    = use_base
             prompt_ex    = False
         else:
             nolora_list  = list(regional_prompts_nolora)
             common_text  = ""
             col_texts    = nolora_list
+            _has_base    = use_base
             prompt_ex    = False
 
         _dbg(f"  [common merge] use_common={use_common}  common_text={bool(common_text)}  → {'active' if (use_common and common_text) else 'inactive'}")
@@ -667,11 +679,22 @@ class RPKSampler:
             sample_model.unpatch_model()
         except Exception:
             pass
+
+        # ── steps_add_per_div / cfg_add_per_div ──────────────────────────
+        # n_div = number of COL regions (exclude BASE slot)
+        _n_div = max(0, len(nolora_list) - (1 if _has_base else 0))
+        _steps = steps + _n_div * steps_add_per_div
+        _cfg   = cfg   + _n_div * cfg_add_per_div
+        if steps_add_per_div or cfg_add_per_div:
+            _dbg(f"  [div_adj] n_div={_n_div}  "
+                 f"steps {steps}+{_n_div}×{steps_add_per_div}={_steps}  "
+                 f"cfg {cfg:.1f}+{_n_div}×{cfg_add_per_div:.1f}={_cfg:.1f}")
+
         output = comfy.sample.sample(
             model        = sample_model,
             noise        = noise,
-            steps        = steps,
-            cfg          = cfg,
+            steps        = _steps,
+            cfg          = _cfg,
             sampler_name = sampler_name,
             scheduler    = scheduler,
             positive     = positive_for_sample,

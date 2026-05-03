@@ -252,69 +252,131 @@ class RPRegionalDetailer:
 
         _dbg(f"  [YOLO] Total persons detected: {len(all_boxes)}")
 
-        # ── 4. Select largest person per area ────────────────────
-        # Method: crop each area and run YOLO independently
-        # → Accurately select only persons fully within the area
-        total_area = img_h * img_w
-        n_regions  = len(filters) - (1 if use_base else 0)   # exclude BASE filter if use_base
+        # ── 4. ZImage-style: assign bbox to region by center coordinate ──
+        # Single full-image YOLO pass → bbox center → divide_ratio boundary comparison
+        n_regions = len(filters) - (1 if use_base else 0)
         region_detections = {}
 
-        for col_i in range(n_regions):
-            fil_idx = col_i + (1 if use_base else 0)
-            if fil_idx >= len(filters):
-                continue
-
-            # Upsample filter mask to image size
-            fil_mask = filters[fil_idx][0]
-            fil_img = torch.nn.functional.interpolate(
-                fil_mask.unsqueeze(0).unsqueeze(0).float(),
-                size=(img_h, img_w), mode="nearest"
-            )[0, 0]
-
-            # Area bbox in image coordinates
-            rows_on = fil_img.any(dim=1).nonzero(as_tuple=True)[0]
-            cols_on = fil_img.any(dim=0).nonzero(as_tuple=True)[0]
-            if len(rows_on) == 0 or len(cols_on) == 0:
-                continue
-            ry0 = rows_on[0].item()
-            ry1 = rows_on[-1].item() + 1
-            rx0 = cols_on[0].item()
-            rx1 = cols_on[-1].item() + 1
-
-            # Crop area and run independent YOLO detection
-            crop_region = pil_img.crop((rx0, ry0, rx1, ry1))
-            region_results = yolo(crop_region, conf=detect_threshold, classes=[0], verbose=False)
-
-            best = None
-            best_area = 0
-            if region_results and len(region_results[0].boxes) > 0:
-                rboxes = region_results[0].boxes
-                for i in range(len(rboxes)):
-                    bx1, by1, bx2, by2 = rboxes.xyxy[i].cpu().numpy()
-                    gx1 = float(bx1) + rx0
-                    gy1 = float(by1) + ry0
-                    gx2 = float(bx2) + rx0
-                    gy2 = float(by2) + ry0
-                    conf = float(rboxes.conf[i].cpu())
-                    bw, bh = gx2-gx1, gy2-gy1
-                    area = bw * bh
-
-                    # drop_size filter
-                    if min(bw, bh) < drop_size:
-                        continue
-
-                    if area > best_area:
-                        best_area = area
-                        best = (gx1, gy1, gx2, gy2, conf)
-
-            if best is not None:
-                region_detections[col_i] = best
-                _dbg(f"  [area{col_i}] person detected ✓  "
-                      f"bbox=({best[0]:.0f},{best[1]:.0f},{best[2]:.0f},{best[3]:.0f})"
-                      f"  conf={best[4]:.2f}  area={best_area:.0f}px²"
-                      f"  ({best_area/total_area*100:.1f}%)")
+        def _build_boundaries(ratio_str, is_vertical, w, h):
+            """Build pixel boundary lists from divide_ratio string."""
+            if not ratio_str:
+                return None
+            try:
+                segs = ratio_str.split(";")
+                seg_vals = []
+                for s in segs:
+                    sub = [max(0.0, float(v.strip())) for v in s.split(",") if v.strip()]
+                    if sub:
+                        seg_vals.append(sub)
+            except Exception:
+                return None
+            if not seg_vals:
+                return None
+            def to_px(vals, size):
+                total = sum(vals) or 1
+                bounds = [0]
+                acc = 0.0
+                for v in vals:
+                    acc += v / total
+                    bounds.append(round(acc * size))
+                return bounds
+            if not is_vertical:
+                row_h_vals = [sum(s) for s in seg_vals]
+                y_bounds = to_px(row_h_vals, h)
+                x_bounds_per_row = [to_px(s, w) for s in seg_vals]
+                return ("H", y_bounds, x_bounds_per_row)
             else:
-                _dbg(f"  [area{col_i}] no person → skip")
+                col_w_vals = [sum(s) for s in seg_vals]
+                x_bounds = to_px(col_w_vals, w)
+                y_bounds_per_col = [to_px(s, h) for s in seg_vals]
+                return ("V", x_bounds, y_bounds_per_col)
+
+        def _bbox_to_col_i(x1, y1, x2, y2, bounds, is_vertical, n_regions):
+            """Return col_i (0-based region index) for a bbox by center coordinate."""
+            cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
+            if bounds is None:
+                # No ratio info: equal split by center
+                if not is_vertical:
+                    return min(int(cx / img_w * n_regions), n_regions - 1)
+                else:
+                    return min(int(cy / img_h * n_regions), n_regions - 1)
+            mode = bounds[0]
+            if mode == "H":
+                y_bounds, x_bounds_per_row = bounds[1], bounds[2]
+                row_n = len(y_bounds) - 2
+                for ri in range(len(y_bounds) - 1):
+                    if y_bounds[ri] <= cy < y_bounds[ri + 1]:
+                        row_n = ri; break
+                xb = x_bounds_per_row[row_n] if row_n < len(x_bounds_per_row) else [0, img_w]
+                col_n = len(xb) - 2
+                for ci in range(len(xb) - 1):
+                    if xb[ci] <= cx < xb[ci + 1]:
+                        col_n = ci; break
+                # Flatten (row_n, col_n) → linear col_i
+                col_i = 0
+                for ri in range(row_n):
+                    rb = x_bounds_per_row[ri] if ri < len(x_bounds_per_row) else [0, img_w]
+                    col_i += max(1, len(rb) - 1)
+                col_i += col_n
+                return min(col_i, n_regions - 1)
+            else:  # V
+                x_bounds, y_bounds_per_col = bounds[1], bounds[2]
+                col_n = len(x_bounds) - 2
+                for ci in range(len(x_bounds) - 1):
+                    if x_bounds[ci] <= cx < x_bounds[ci + 1]:
+                        col_n = ci; break
+                yb = y_bounds_per_col[col_n] if col_n < len(y_bounds_per_col) else [0, img_h]
+                row_n = len(yb) - 2
+                for ri in range(len(yb) - 1):
+                    if yb[ri] <= cy < yb[ri + 1]:
+                        row_n = ri; break
+                # Flatten (col_n, row_n) → linear col_i
+                col_i = 0
+                for ci in range(col_n):
+                    yb2 = y_bounds_per_col[ci] if ci < len(y_bounds_per_col) else [0, img_h]
+                    col_i += max(1, len(yb2) - 1)
+                col_i += row_n
+                return min(col_i, n_regions - 1)
+
+        _is_vertical = "Ver" in (divide_mode or "Horizontal")
+        _ratio_str   = (divide_ratio or "").strip()
+        _bounds      = _build_boundaries(_ratio_str, _is_vertical, img_w, img_h)
+        _dbg(f"  [assign] divide_mode={divide_mode}  ratio='{_ratio_str}'  "
+             f"n_regions={n_regions}")
+
+        # Assign each detected bbox to a region by center coordinate
+        # If multiple persons in same region → keep largest area, rest → fallback
+        fallback_boxes = []  # persons not selected for any COL → base prompt
+        displaced = {}       # region → previously assigned (smaller) bbox
+        for bx1, by1, bx2, by2, bconf, barea in all_boxes:
+            bw, bh = bx2 - bx1, by2 - by1
+            if min(bw, bh) < drop_size:
+                continue
+            col_i = _bbox_to_col_i(bx1, by1, bx2, by2, _bounds, _is_vertical, n_regions)
+            if col_i not in region_detections:
+                region_detections[col_i] = (bx1, by1, bx2, by2, bconf, barea)
+                _dbg(f"  [region{col_i}] assigned "
+                     f"bbox=({bx1:.0f},{by1:.0f},{bx2:.0f},{by2:.0f})"
+                     f"  conf={bconf:.2f}  area={barea:.0f}px²")
+            elif barea > region_detections[col_i][5]:
+                # New bbox is larger → displace current to fallback
+                old_box = region_detections[col_i]
+                fallback_boxes.append(old_box[:5])
+                _dbg(f"  [region{col_i}] replaced by larger bbox → old to fallback")
+                region_detections[col_i] = (bx1, by1, bx2, by2, bconf, barea)
+            else:
+                # Current bbox is smaller → goes to fallback
+                fallback_boxes.append((bx1, by1, bx2, by2, bconf))
+                _dbg(f"  [fallback] bbox=({bx1:.0f},{by1:.0f},{bx2:.0f},{by2:.0f})"
+                     f"  conf={bconf:.2f} → base prompt")
+
+        _dbg(f"  [region_detections] {len(region_detections)} regions assigned, "
+             f"{len(fallback_boxes)} fallback persons")
+
+        # Strip area from stored tuple to match downstream format (x1,y1,x2,y2,conf)
+        region_detections = {
+            k: v[:5] for k, v in region_detections.items()
+        }
 
         # ── 5. Build debug image (bbox visualization) ──────────────
         debug_np = img_np.copy()
@@ -559,6 +621,142 @@ class RPRegionalDetailer:
                 pass
 
         result_tensor = result_img.unsqueeze(0)  # [1,H,W,C]
+
+
+        # ── Fallback: base prompt inpainting for displaced persons ──────────
+        # Persons not assigned to any COL region → inpaint with base prompt
+        if fallback_boxes:
+            print(f"[RPRegionalDetailer] fallback: {len(fallback_boxes)} persons → base prompt")
+
+            # Build base conditioning: common + base_text (same as col loop)
+            _fb_text = ""
+            _use_com_fb = bool(common_text and _use_com)
+            if _use_com_fb:
+                _fb_text += common_text.strip()
+            _base_t = col_texts[0] if (use_base and col_texts) else ""
+            if _base_t:
+                _fb_text = (_fb_text + ", " + _base_t).strip(", ")
+            if not _fb_text:
+                _fb_text = col_texts[0] if col_texts else (nolora_list[0] if nolora_list else "")
+            print(f"[RPRegionalDetailer] fallback base prompt: {_fb_text[:100]}")
+
+            if _fb_text:
+                tok_fb     = clip.tokenize(_fb_text)
+                cond_fb, pooled_fb = _enc(clip, tok_fb)
+                pos_fb     = [[cond_fb, {"pooled_output": pooled_fb}]]
+
+                from PIL import Image as _PILFb
+                import torch.nn.functional as _FFb
+
+                for _fb_i, (_fx1, _fy1, _fx2, _fy2, _fconf) in enumerate(fallback_boxes):
+                    # Apply padding (same as col loop)
+                    fpx1 = max(0, int(_fx1) - mask_padding)
+                    fpy1 = max(0, int(_fy1) - mask_padding)
+                    fpx2 = min(img_w, int(_fx2) + mask_padding)
+                    fpy2 = min(img_h, int(_fy2) + mask_padding)
+                    fcw, fch = fpx2 - fpx1, fpy2 - fpy1
+                    if fcw < 8 or fch < 8:
+                        continue
+
+                    try:
+                        # Dilation mask (full bbox area)
+                        _fb_mask_np = np.ones((fch, fcw), dtype=np.float32)
+
+                        # Apply feather via blur
+                        if feather > 0:
+                            try:
+                                import cv2 as _cv2fb
+                                _fb_mask_np = _cv2fb.GaussianBlur(
+                                    _fb_mask_np, (0, 0), feather)
+                            except Exception:
+                                pass
+
+                        # Crop from current result
+                        _fb_crop_np = (result_img[fpy1:fpy2, fpx1:fpx2].cpu().numpy() * 255).astype(np.uint8)
+
+                        # Upscale if needed (same logic as col loop)
+                        _fb_max = max(fcw, fch)
+                        if _fb_max < scale_to_pixel:
+                            _sc = scale_to_pixel / _fb_max
+                            _fup_w = max(64, round(fcw * _sc) // 8 * 8)
+                            _fup_h = max(64, round(fch * _sc) // 8 * 8)
+                        else:
+                            _fup_w = max(64, fcw // 8 * 8)
+                            _fup_h = max(64, fch // 8 * 8)
+
+                        _fb_crop_pil = _PILFb.fromarray(_fb_crop_np)
+                        _fb_crop_up  = _fb_crop_pil.resize((_fup_w, _fup_h), _PILFb.LANCZOS)
+                        _fb_mask_pil = _PILFb.fromarray((_fb_mask_np * 255).astype(np.uint8))
+                        _fb_mask_up  = _fb_mask_pil.resize((_fup_w, _fup_h), _PILFb.LANCZOS)
+
+                        # VAE encode
+                        _fb_crop_t = torch.from_numpy(
+                            np.array(_fb_crop_up).astype(np.float32) / 255.0
+                        ).unsqueeze(0).to(device)
+                        _fb_lat = vae.encode(_fb_crop_t)
+                        if isinstance(_fb_lat, dict):
+                            _fb_lat = _fb_lat["samples"]
+
+                        # Noise mask
+                        _fb_noise_mask = None
+                        if noise_mask:
+                            _lh, _lw = _fb_lat.shape[2], _fb_lat.shape[3]
+                            _mn = np.array(_fb_mask_up).astype(np.float32) / 255.0
+                            _mt = torch.from_numpy(_mn).unsqueeze(0).unsqueeze(0)
+                            _fb_noise_mask = _FFb.interpolate(
+                                _mt.float(), size=(_lh, _lw), mode="bilinear",
+                                align_corners=False
+                            ).squeeze(0).to(_fb_lat.device)
+
+                        # Sample
+                        _fb_noise_t = comfy.sample.prepare_noise(_fb_lat, seed + 1000 + _fb_i, None)
+                        try:
+                            model.unpatch_model()
+                        except Exception:
+                            pass
+                        _fb_out = comfy.sample.sample(
+                            model        = model,
+                            noise        = _fb_noise_t,
+                            steps        = steps,
+                            cfg          = cfg,
+                            sampler_name = sampler_name,
+                            scheduler    = scheduler,
+                            positive     = pos_fb,
+                            negative     = negative,
+                            latent_image = _fb_lat,
+                            denoise      = denoise,
+                            seed         = seed + 1000 + _fb_i,
+                            noise_mask   = _fb_noise_mask,
+                        )
+                        _fb_lat_out = _fb_out["samples"] if isinstance(_fb_out, dict) else _fb_out
+
+                        # VAE decode
+                        _fb_dec = vae.decode(_fb_lat_out)
+                        _fb_dec_np = (_fb_dec[0].cpu().numpy() * 255).astype(np.uint8)
+
+                        # Resize back to original crop size
+                        if _fb_dec_np.shape[:2] != (fch, fcw):
+                            _fb_dec_np = np.array(
+                                _PILFb.fromarray(_fb_dec_np).resize((fcw, fch), _PILFb.LANCZOS)
+                            )
+
+                        # Blend with mask
+                        _fb_mask_blend = np.array(
+                            _fb_mask_up.resize((fcw, fch), _PILFb.LANCZOS)
+                        ).astype(np.float32) / 255.0
+                        _fb_mask_blend = _fb_mask_blend[:, :, np.newaxis]
+                        _fb_orig = (result_img[fpy1:fpy2, fpx1:fpx2].cpu().numpy() * 255).astype(np.uint8)
+                        _fb_blended = (_fb_dec_np * _fb_mask_blend + _fb_orig * (1 - _fb_mask_blend)).astype(np.uint8)
+                        result_img[fpy1:fpy2, fpx1:fpx2] = torch.from_numpy(
+                            _fb_blended.astype(np.float32) / 255.0
+                        )
+                        print(f"[RPRegionalDetailer] fallback{_fb_i} inpainted ✓  "
+                              f"bbox=({int(_fx1)},{int(_fy1)},{int(_fx2)},{int(_fy2)})")
+
+                    except Exception as _fe:
+                        import traceback
+                        print(f"[RPRegionalDetailer] fallback{_fb_i} failed: {_fe}")
+                        traceback.print_exc()
 
         # Update debug image with latest result
         debug_final = debug_tensor  # keep bbox visualization

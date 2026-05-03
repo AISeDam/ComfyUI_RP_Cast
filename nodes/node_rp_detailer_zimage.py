@@ -672,6 +672,15 @@ class RPRegionalDetailerZImage:
             _dbg("  no matches → return original")
             return (image, image)
 
+        # Collect unmatched persons → fallback (base prompt)
+        matched_mask_indices = set(matched.values())
+        fallback_boxes = [
+            persons[m_i][:5]
+            for m_i in range(len(persons))
+            if m_i not in matched_mask_indices
+        ]
+        _dbg(f"  fallback persons (base prompt): {len(fallback_boxes)}")
+
         # ── 7. Build debug image ─────────────────────────────
         debug_np = img_np.copy()
         colors = [(255,80,80),(80,255,80),(80,80,255),
@@ -947,4 +956,75 @@ class RPRegionalDetailerZImage:
             pass
 
         print(f"[RPRegionalDetailerZImage] done")
+
+        # ── Fallback: base prompt inpainting for displaced persons ──────────
+        # Persons not assigned to any COL region → inpaint with base prompt
+        if fallback_boxes:
+            _dbg(f"  [fallback] inpainting {len(fallback_boxes)} persons with base prompt")
+
+            # Resolve common_text and col_texts for ZImage (loop-local vars)
+            _fb_common = regional_prompts_nolora.get("common", "") \
+                         if isinstance(regional_prompts_nolora, dict) else ""
+            _fb_all_col = regional_prompts_nolora.get("col_texts", []) \
+                          if isinstance(regional_prompts_nolora, dict) else col_texts
+            _fb_use_com = use_common and bool(_fb_common)
+
+            # Build base conditioning: common + base_text
+            _fb_text = ""
+            if _fb_common and _fb_use_com:
+                _fb_text += _fb_common.strip()
+            _base_t = _fb_all_col[0] if (use_base and _fb_all_col) else ""
+            if _base_t:
+                _fb_text = (_fb_text + ", " + _base_t).strip(", ")
+            if not _fb_text:
+                _fb_text = _fb_all_col[0] if _fb_all_col else (nolora_list[0] if nolora_list else "")
+
+            _dbg(f"  [fallback] base prompt: {_fb_text[:80]}")
+
+            if _fb_text:
+                tok_fb = clip.tokenize(_fb_text)
+                cond_fb, pooled_fb = _enc(clip, tok_fb)
+                pos_fb = [[cond_fb, {"pooled_output": pooled_fb}]]
+
+                for _fb_i, (_fx1, _fy1, _fx2, _fy2, _fconf) in enumerate(fallback_boxes):
+                    fpx1 = max(0, int(_fx1) - mask_padding)
+                    fpy1 = max(0, int(_fy1) - mask_padding)
+                    fpx2 = min(img_w, int(_fx2) + mask_padding)
+                    fpy2 = min(img_h, int(_fy2) + mask_padding)
+                    fcw, fch = fpx2 - fpx1, fpy2 - fpy1
+                    if fcw < 8 or fch < 8:
+                        continue
+                    try:
+                        _fc = result_img[fpy1:fpy2, fpx1:fpx2]  # [H,W,C]
+                        _fvae_in = _fc.unsqueeze(0).permute(0, 3, 1, 2).to(device)
+                        _fenc = vae.encode(_fvae_in.squeeze(0))
+                        _fnoise = torch.zeros_like(_fenc["samples"]) if isinstance(_fenc, dict) else torch.zeros_like(_fenc)
+                        _flat = _fenc["samples"] if isinstance(_fenc, dict) else _fenc
+
+                        # Create inpaint mask (full crop)
+                        _fmask_lat = torch.ones(
+                            (1, 1, _flat.shape[2], _flat.shape[3]),
+                            device=device
+                        )
+                        _fnoise_t = comfy.sample.prepare_noise(_flat, seed, None)
+                        _fb_out = comfy.sample.sample(
+                            model, _fnoise_t,
+                            steps, cfg,
+                            sampler_name, scheduler,
+                            pos_fb, negative,
+                            _flat,
+                            denoise=denoise,
+                            noise_mask=_fmask_lat,
+                        )
+                        _fb_samples = _fb_out["samples"] if isinstance(_fb_out, dict) else _fb_out
+                        _fb_dec = vae.decode(_fb_samples)
+                        if _fb_dec.dim() == 4:
+                            _fb_dec = _fb_dec[0]
+                        _fb_hw = _fb_dec.permute(1, 2, 0)
+                        foh, fow = min(fch, _fb_hw.shape[0]), min(fcw, _fb_hw.shape[1])
+                        result_img[fpy1:fpy1+foh, fpx1:fpx1+fow] = _fb_hw[:foh, :fow].to(result_img.device)
+                        _dbg(f"  [fallback{_fb_i}] inpainted ✓")
+                    except Exception as _fe:
+                        print(f"  [fallback{_fb_i}] inpaint failed: {_fe}")
+
         return (result_img.unsqueeze(0), debug_tensor)

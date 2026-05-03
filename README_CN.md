@@ -52,13 +52,19 @@ git clone https://github.com/AISeDam/ComfyUI_RP_Cast
 | `RPPromptParser` | 编写各区域提示词并自动分割 |
 | `RPRatioParser` | 接收 `divide_ratio`、`divide_mode`、`threshold` 作为输入，输出区域数据（`regional_col_n_row`）和 threshold。连接在 RPPromptParser 之后 |
 
-### 第二步 — 根据模型选择采样器
+### 第二步 — 选择适合您模型的采样器和细化器
 
 | 使用模型 | 采样器 | 细化器 |
 |---------|-------|-------|
-| SDXL / SD 1.x | `RPKSampler` | `RPRegionalDetailer` |
-| Z-Image | `RPKSamplerZImage` | `RPRegionalDetailerZImage` |
-| Qwen | `RPKSamplerQwen` | `RPRegionalDetailerQwen` |
+| SDXL / SD 1.x | `RP KSampler (SDXL)` | `RP Regional Detailer (SDXL)` |
+| Z-Image / Qwen | *（使用ComfyUI标准KSampler）* | `RP Regional Detailer (Z-Image)` |
+| Qwen | *（使用ComfyUI标准KSampler）* | `RP Regional Detailer (Qwen)` |
+
+### 可选 — RP Converter
+
+| 节点 | 功能 |
+|------|------|
+| `RP Converter` | 通过本地Ollama LLM（推荐`gemma3:12b`）将自然语言场景描述转换为RP结构提示词。按COSPLAY/人物关键词自动分割输入，支持风格关键词追加和每区域LoRA自动标签功能。 |
 
 ---
 
@@ -162,13 +168,27 @@ RPPromptParser → RPRatioParser ────→ RPKSamplerQwen
 
 | 节点 | 目标模型 |
 |------|---------|
-| `RPRegionalDetailer` | SDXL / SD1.x |
-| `RPRegionalDetailerZImage` | Z-Image |
-| `RPRegionalDetailerQwen` | Qwen |
+| `RP Regional Detailer (SDXL)` | SDXL / SD1.x |
+| `RP Regional Detailer (Z-Image)` | Z-Image / Qwen |
+| `RP Regional Detailer (Qwen)` | Qwen（委托给Z-Image细化器） |
+
+**后备修复绘制（所有细化器通用）**
+
+同一区域检测到多个人物时，面积最大的人物获得COL区域提示词。
+其余落选人物使用**基础提示词**（`COMMON + BASE text`）进行修复绘制。
 
 ### 各 Detailer 的工作机制
 
-**RPRegionalDetailer** (SDXL / SD1.x)
+**RP Regional Detailer (SDXL)**
+
+1. **对全图运行一次YOLO**，通过bbox中心坐标与divide_ratio边界比较分配区域（ZImage方式）。
+2. 同一区域多人时，面积最大者优先分配，其余进入基础提示词后备修复绘制队列。
+3. 对每个bbox：掩码膨胀(dilation) + 模糊 → crop放大(LANCZOS)
+   → VAE编码 → 使用区域提示词(COMMON + BASE + DIV组合)修复绘制
+   → VAE解码 → 掩码混合合成回原图。
+4. 修复绘制前独立加载该区域LoRA，**区域级LoRA独立应用在此阶段完全实现**。
+
+*(原名: RPRegionalDetailer)*
 
 1. **按区域蒙版分别运行 YOLO** — 裁剪每个区域后单独运行 YOLO，
    选取该区域内面积最大的人物 bbox。
@@ -255,6 +275,46 @@ API Key 申请: https://aistudio.google.com/apikey
 ---
 
 ## 更新历史
+
+### v0.6.00 (2026-05-03)
+
+**新增**
+- `RP Converter` 节点：通过 Ollama LLM 将自然语言场景描述转换为 RP 结构提示词
+  - `style_prompt`：Ollama 转换后在 ADDCOMM 与 ADDBASE 之间追加关键词
+  - `lora_directory` + `lora_auto_apply`：每个 COL 区域自动添加随机 LoRA（含触发词，AGP 风格）
+  - ComfyUI 启动时自动获取 Ollama 模型列表，未运行时在 execute 时重试
+  - 推荐`gemma3:12b`；同时支持`llama3.2:3b`和`qwen3`（`qwen3`自动添加`/no_think`指令）
+  - 转换完成后从 VRAM 卸载模型（`keep_alive=0`）
+  - Ollama 输出无效时自动回退到 WD14 标签匹配（未安装时自动下载）
+  - RP 结构无效（ADDCOMM/ADDBASE 缺失或重复）时重试 1 次
+  - `RPPromptParser` 新增 `NL_prompts` STRING 输出（用于直接 CLIP 编码连接）
+- `RPKSampler (SDXL)`：在 `lora_weight_adj` 上方新增 `steps_add_per_div`、`cfg_add_per_div` 控件
+  - steps = steps + (n_div × steps_add_per_div), cfg = cfg + (n_div × cfg_add_per_div)
+- `RPRegionalDetailer` + `RPRegionalDetailerZImage`：为未分配人物添加 fallback 修复绘制
+  - 未分配到任何 COL 区域的人物使用基础提示词（common + base_text）修复绘制
+- `RPRegionalDetailer`：切换为 ZImage 风格的全图单次 YOLO + bbox 中心坐标区域分类
+
+**变更**
+- `RP KSampler` 显示名称 → `RP KSampler (SDXL)`
+- `RP Regional Detailer` 显示名称 → `RP Regional Detailer (SDXL)`
+- `RPRegionalDetailer`：区域分配改为 bbox 中心坐标与 divide_ratio 边界比较（ZImage 模式）
+
+**删除**
+- 删除 `RP KSampler (Z-Image)` 节点
+- 删除 `RP KSampler (Qwen)` 节点
+- 删除 `RP KSampler (FLUX.2)` 节点
+- 删除未使用 stub 文件：`node_rp_conditioning.py`、`node_rp_filter_maker.py`、`node_rp_ratio_parser.py`
+
+- `RP Converter`: 默认模型改为`gemma3:12b`（指令遵循性能优于llama3.2:3b）
+- `RP Converter`: System Prompt针对gemma3重新设计 — 明确PART A / PART B分割格式，附带EXAMPLE
+- `RP Converter`: User Prompt中Python先按COSPLAY/人物关键词分割输入再传递，彻底解决跨区域标签混用问题
+- `RP Converter`: 流式和非流式所有API payload均添加`think: false`
+- `RP Converter`: 使用`qwen3`模型时，在User Prompt前自动添加`/no_think`指令（双重保障）
+- `RP Converter`: 所有API payload添加`context: []` — 每次请求彻底清除对话历史，防止前次提示词泄漏
+- `RP Converter`: retry验证新增`ADDCOMM`/`ADDBASE`重复检测（除缺失外，重复也触发retry）
+- `RP Converter`: retry提示消息明确注明"ADDCOMM must appear EXACTLY ONCE / ADDBASE must appear EXACTLY ONCE"
+- `RPKSampler (SDXL)`: `steps_add_per_div`/`cfg_add_per_div`默认值设为`0`（未使用时无操作）
+- `RPRegionalDetailer (SDXL)`/`RPRegionalDetailerZImage`: fallback修复绘制改为与主COL循环相同的crop→upscale→VAE编码→采样→混合流水线
 
 ### v0.5.60 (2026-04-30)
 

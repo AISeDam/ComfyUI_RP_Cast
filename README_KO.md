@@ -4,7 +4,7 @@
 왼쪽/오른쪽, 위/아래, 격자 분할 등을 지원합니다.
 SDXL, Z-Image, Qwen 모델에서 사용할 수 있습니다.
 
-**버전: 0.5.60** | [GitHub](https://github.com/AISeDam/ComfyUI_RP_Cast)
+**버전: 0.6.00** | [GitHub](https://github.com/AISeDam/ComfyUI_RP_Cast)
 
 ---
 
@@ -52,13 +52,19 @@ ComfyUI를 재시작하면 8개 노드가 자동으로 나타납니다.
 | `RPPromptParser` | 구역별 프롬프트를 작성하고 자동으로 분리합니다 |
 | `RPRatioParser` | `divide_ratio`, `divide_mode`, `threshold`를 입력받아 구역 데이터(`regional_col_n_row`)와 threshold를 출력합니다. RPPromptParser 다음에 연결합니다 |
 
-### 2단계 — 모델에 맞는 샘플러 선택
+### 2단계 — 모델에 맞는 샘플러와 디테일러 선택
 
 | 사용 모델 | 샘플러 | 디테일러 |
 |-----------|--------|----------|
-| SDXL / SD 1.x | `RPKSampler` | `RPRegionalDetailer` |
-| Z-Image | `RPKSamplerZImage` | `RPRegionalDetailerZImage` |
-| Qwen | `RPKSamplerQwen` | `RPRegionalDetailerQwen` |
+| SDXL / SD 1.x | `RP KSampler (SDXL)` | `RP Regional Detailer (SDXL)` |
+| Z-Image / Qwen | *(ComfyUI 기본 KSampler 사용)* | `RP Regional Detailer (Z-Image)` |
+| Qwen | *(ComfyUI 기본 KSampler 사용)* | `RP Regional Detailer (Qwen)` |
+
+### 선택 사항 — RP Converter
+
+| 노드 | 역할 |
+|------|------|
+| `RP Converter` | 자연어 씬 설명을 로컬 Ollama LLM(`gemma3:12b` 권장)으로 RP 구조 프롬프트로 변환합니다. COSPLAY/인물 키워드 기준으로 입력을 자동 분리하고, 스타일 키워드 추가 및 구역별 LoRA 자동 태그 기능을 포함합니다. |
 
 ---
 
@@ -98,61 +104,6 @@ EmptyLatentImage → RPKSampler (latent_image)
 RPPromptParser → RPRatioParser ────→ RPKSampler
 ```
 
----
-
-## Z-Image — RPKSamplerZImage
-
-`EmptyLatentImage` 불필요 — 노드에서 `width`, `height`를 직접 설정합니다.
-
-> **왜 통합 프롬프트를 사용하나요?**
-> Z-Image는 SDXL과 다른 attention 아키텍처를 사용합니다.
-> SDXL의 구역별 샘플링은 각 샘플링 스텝마다 Region별 프롬프트를 별도로 처리하고
-> 그 결과 latent를 구역별로 블렌딩하는 방식(denoised callback)으로 동작합니다.
-> Z-Image는 이 스텝별 훅을 지원하지 않아 구역별 latent 블렌딩을 적용할 수 없습니다.
-> 대신 모든 구역 프롬프트를 자연어 위치 레이블과 함께 하나의 프롬프트로 병합하여
-> (예: `(캐릭터 A) on the left side and (캐릭터 B) on the right side`)
-> **1회 샘플링**합니다.
-
-| 위젯 | 설명 |
-|------|------|
-| `width` / `height` | 출력 이미지 크기 (노드에서 직접 설정) |
-| `steps` | 기본값: `8`. Z-Image Turbo는 적은 스텝으로도 동작합니다. |
-| `cfg` | 기본값: `1.0`. Z-Image 기반 모델은 `cfg=1.0`을 사용합니다. |
-| `shift` | Z-Image 노이즈 스케줄. 기본값: `3.0`. 권장값: `3~6`. 값이 클수록 노이즈를 후반 스텝으로 이동 |
-
-**기본 연결:**
-
-```
-ZImageCheckpointLoader ────────────→ RPKSamplerZImage
-RPPromptParser → RPRatioParser ────→ RPKSamplerZImage
-```
-
----
-
-## Qwen — RPKSamplerQwen
-
-Z-Image와 같은 방식이지만, 위치 레이블 대신 장면 서술형 프롬프트를 사용합니다.
-
-> **왜 통합 프롬프트를 사용하나요?**
-> Qwen도 동일한 아키텍처를 사용하므로 스텝별 구역 훅을 사용할 수 없습니다.
-> 대신 Qwen은 장면 서술 방식으로 프롬프트를 구성합니다.
-> (`(캐릭터 A) on the left side and (캐릭터 B) on the right side,
-> interacting naturally in the same scene, seamless composition`)
-> **두 캐릭터가 자연스럽게 상호작용하는 장면**에 가장 적합합니다.
-
-| 위젯 | 설명 |
-|------|------|
-| `width` / `height` | 출력 이미지 크기 |
-| `steps` | 기본값: `20`. Qwen 권장값: `15~20`. |
-| `cfg` | 기본값: `1.0`. Qwen 기반 모델 권장값. |
-| `shift` | Qwen 노이즈 스케줄. 기본값: `3.0`. 권장값: `3~6` |
-
-**기본 연결:**
-
-```
-QwenCheckpointLoader ──────────────→ RPKSamplerQwen
-RPPromptParser → RPRatioParser ────→ RPKSamplerQwen
-```
 
 
 ---
@@ -164,40 +115,44 @@ YOLO 모델이 필요합니다 (예: `bbox/person_yolov8m-seg.pt`). `models/ultr
 
 | 노드 | 대상 모델 |
 |------|-----------|
-| `RPRegionalDetailer` | SDXL / SD1.x |
-| `RPRegionalDetailerZImage` | Z-Image |
-| `RPRegionalDetailerQwen` | Qwen |
+| `RP Regional Detailer (SDXL)` | SDXL / SD1.x |
+| `RP Regional Detailer (Z-Image)` | Z-Image / Qwen |
+| `RP Regional Detailer (Qwen)` | Qwen (Z-Image Detailer에 위임) |
+
+**Fallback 인페인팅 (모든 Detailer 공통)**
+
+동일 구역에 여러 인물이 감지된 경우, 가장 큰 인물이 해당 COL 구역 프롬프트를 담당합니다.
+나머지 탈락 인물은 **베이스 프롬프트** (`COMMON + BASE text`)로 인페인팅되어 보정이 적용됩니다.
 
 ### 각 Detailer의 동작 메커니즘
 
-**RPRegionalDetailer** (SDXL / SD1.x)
+**RP Regional Detailer (SDXL)**
 
-1. **구역 마스크별로 YOLO를 개별 실행** — 각 구역 영역을 잘라내어 YOLO를 따로 적용하고,
-   해당 구역 내에서 가장 큰 인물의 bbox를 선택합니다.
-2. 감지된 각 bbox에 대해: 마스크 팽창(dilation) + 블러 → crop 업스케일(LANCZOS)
+1. **전체 이미지에서 YOLO를 1회 실행**한 후, 각 인물의 bbox 중심 좌표를
+   divide_ratio 경계와 비교하여 구역을 분류합니다 (ZImage 방식).
+   Horizontal, Vertical, 2D 그리드 레이아웃을 모두 지원합니다.
+2. 동일 구역에 여러 인물이 겹치면 가장 큰 인물이 우선 배정되고,
+   나머지는 베이스 프롬프트 fallback 인페인팅 대상이 됩니다.
+3. 각 bbox에 대해: 마스크 팽창(dilation) + 블러 → crop 업스케일(LANCZOS)
    → VAE 인코딩 → 해당 구역의 프롬프트(COMMON + BASE + DIV 조합)로 인페인팅
-   → VAE 디코딩 → 원본 이미지에 합성합니다.
-3. 각 구역 인페인팅 직전에 해당 구역의 LoRA를 독립적으로 로드하므로,
+   → VAE 디코딩 → 마스크 블렌딩으로 원본에 합성합니다.
+4. 각 구역 인페인팅 직전에 해당 구역의 LoRA를 독립적으로 로드하므로,
    **구역별 LoRA 독립 적용이 이 단계에서 완전히 실현**됩니다.
 
-**RPRegionalDetailerZImage** (Z-Image)
+**RP Regional Detailer (Z-Image)**
 
-1. **전체 이미지에서 YOLO를 1회 실행**한 후, 각 감지된 인물의 bbox 중심 좌표를
-   divide_ratio 경계와 비교하여 해당 구역을 자동으로 분류합니다.
-2. 선택적으로 **WD14 ONNX 성별 분류** (boy/girl 스코어)를 bbox별로 실행하여
-   가장 적합한 구역 프롬프트를 자동으로 선택합니다.
-3. 각 bbox를 Z-Image latent (16채널, crop 크기에서 자동 생성)로 인페인팅합니다.
-   **프롬프트 인코딩은 RPRegionalDetailer와 동일한 COMMON + BASE + DIV 조합 방식**을 사용합니다.
-   RPKSamplerZImage의 위치 레이블 병합 방식이 아닙니다.
-   구역별 LoRA 독립 적용은 SDXL과 동일합니다.
+1. **전체 이미지에서 YOLO를 1회 실행**, bbox 중심 좌표로 구역을 분류합니다.
+2. 선택적으로 **WD14 ONNX 성별 분류** (boy/girl 스코어)를 실행하여
+   가장 적합한 구역 프롬프트를 자동 선택합니다.
+3. Z-Image latent (16채널)로 인페인팅합니다.
+   프롬프트 인코딩은 **COMMON + BASE + DIV 조합 방식**을 사용합니다.
+4. 탈락 인물은 베이스 프롬프트로 fallback 인페인팅됩니다.
 
-**RPRegionalDetailerQwen** (Qwen)
+**RP Regional Detailer (Qwen)**
 
-RPRegionalDetailerZImage에 전체 처리를 위임합니다.
-구조적 차이점은 Qwen의 VAE가 5D 텐서 `[B, T, H, W, C]`를 반환할 수 있어,
-이를 4D `[B, H, W, C]`로 정규화한 후 RPRegionalDetailerZImage에 전달한다는 것입니다.
-구역 프롬프트는 **장면 서술 방식으로 병합하지 않고 그대로 전달**되며,
-RPRegionalDetailerZImage와 동일한 COMMON + BASE + DIV 인코딩이 적용됩니다.
+`RP Regional Detailer (Z-Image)`에 전체 처리를 위임합니다.
+Qwen의 VAE가 5D 텐서 `[B, T, H, W, C]`를 반환할 경우 4D `[B, H, W, C]`로 정규화한 후 전달합니다.
+프롬프트는 **COMMON + BASE + DIV 조합 방식**으로 인코딩됩니다.
 
 ---
 
@@ -258,6 +213,47 @@ API Key 발급: https://aistudio.google.com/apikey
 ---
 
 ## 업데이트 이력
+
+### v0.6.00 (2026-05-03)
+
+**추가**
+- `RP Converter` 노드: 자연어 씬 설명을 Ollama LLM을 통해 RP 구조 프롬프트로 변환
+  - `style_prompt`: Ollama 변환 후 ADDCOMM~ADDBASE 사이에 키워드 추가
+  - `lora_directory` + `lora_auto_apply`: COL 섹션별 랜덤 LoRA 자동 추가 (트리거 워드 포함, AGP 방식)
+  - ComfyUI 시작 시 Ollama 모델 리스트 자동 조회, 미실행 시 execute 시 재시도
+  - `gemma3:12b` 권장; `llama3.2:3b`, `qwen3` 지원 (`qwen3`는 `/no_think` 지시어 자동 적용)
+  - 변환 완료 후 모델 VRAM 해제 (`keep_alive=0`)
+  - Ollama 출력 이상 시 WD14 태그 매칭 fallback (미설치 시 자동 다운로드)
+  - 규격외 RP 구조(ADDCOMM/ADDBASE 누락 또는 중복) 시 1회 retry
+  - `RPPromptParser`에 `NL_prompts` STRING output 추가 (CLIP encode 직접 연결용)
+- `RPKSampler (SDXL)`: `steps_add_per_div`, `cfg_add_per_div` 위젯 추가 (`lora_weight_adj` 위)
+  - steps = steps + (n_div × steps_add_per_div), cfg = cfg + (n_div × cfg_add_per_div)
+- `RPRegionalDetailer` + `RPRegionalDetailerZImage`: 탈락 인물 fallback 인페인팅
+  - COL에 미배정된 인물을 base 프롬프트(common + base_text)로 인페인팅
+- `RPRegionalDetailer`: ZImage 방식 전체 이미지 1회 YOLO + bbox 중심 좌표 기반 구역 분류로 전환
+
+**변경**
+- `RP KSampler` 표시명 → `RP KSampler (SDXL)`
+- `RP Regional Detailer` 표시명 → `RP Regional Detailer (SDXL)`
+- `RPRegionalDetailer`: 구역 할당 방식을 bbox 중심 좌표 vs divide_ratio 경계 비교로 변경 (ZImage 방식)
+
+**제거**
+- `RP KSampler (Z-Image)` 노드 제거
+- `RP KSampler (Qwen)` 노드 제거
+- `RP KSampler (FLUX.2)` 노드 제거
+- 미사용 stub 파일 제거: `node_rp_conditioning.py`, `node_rp_filter_maker.py`, `node_rp_ratio_parser.py`
+
+- `RP Converter`: 기본 모델을 `gemma3:12b`로 변경 (llama3.2:3b 대비 지시 준수 성능 우수)
+- `RP Converter`: System Prompt를 gemma3 전용으로 재구성 — PART A / PART B 명시적 분리 형식 + EXAMPLE 포함
+- `RP Converter`: User Prompt에서 COSPLAY/인물 키워드 기준으로 Python이 먼저 입력을 분리하여 전달, 섹션 간 태그 혼용 문제 해소
+- `RP Converter`: 스트리밍/비스트리밍 모든 API 페이로드에 `think: false` 적용
+- `RP Converter`: `qwen3` 모델 사용 시 User Prompt 앞에 `/no_think` 지시어 자동 추가 (이중 보장)
+- `RP Converter`: 모든 API 페이로드에 `context: []` 추가 — 매 요청마다 대화 이력 완전 소거, 이전 프롬프트 누수 방지
+- `RP Converter`: retry 유효성 검사에 `ADDCOMM` / `ADDBASE` 중복 감지 추가 (누락 외 중복도 retry 트리거)
+- `RP Converter`: retry 힌트 메시지에 "ADDCOMM must appear EXACTLY ONCE / ADDBASE must appear EXACTLY ONCE" 명시
+- `RP Converter`: `_WD14_TAG_SET = None` 모듈 레벨 선언 추가 (WD14 fallback 경로의 `NameError` 수정)
+- `RPKSampler (SDXL)`: `steps_add_per_div` / `cfg_add_per_div` 기본값 `0` 설정 (미사용 시 동작 없음)
+- `RPRegionalDetailer (SDXL)` / `RPRegionalDetailerZImage`: fallback 인페인팅을 메인 COL 루프와 동일한 crop→upscale→VAE encode→sample→blend 파이프라인으로 개선
 
 ### v0.5.60 (2026-04-30)
 

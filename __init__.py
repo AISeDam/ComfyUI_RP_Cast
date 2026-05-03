@@ -54,8 +54,7 @@ _pp       = _load_module("nodes.node_rp_prompt_parser",    "nodes/node_rp_prompt
 _ks       = _load_module("nodes.node_rp_ksampler",         "nodes/node_rp_ksampler.py")
 _det      = _load_module("nodes.node_rp_detailer",         "nodes/node_rp_detailer.py")
 _det_zi   = _load_module("nodes.node_rp_detailer_zimage",  "nodes/node_rp_detailer_zimage.py")
-_ks_zi    = _load_module("nodes.node_rp_ksampler_zimage",  "nodes/node_rp_ksampler_zimage.py")
-_ks_qw    = _load_module("nodes.node_rp_ksampler_qwen",    "nodes/node_rp_ksampler_qwen.py")
+_conv     = _load_module("nodes.node_rp_converter",       "nodes/node_rp_converter.py")
 _det_qw   = _load_module("nodes.node_rp_detailer_qwen",    "nodes/node_rp_detailer_qwen.py")
 _oai      = _load_module("nodes.node_rp_txt2img_openai",   "nodes/node_rp_txt2img_openai.py")
 _gem      = _load_module("nodes.node_rp_txt2img_gemini",   "nodes/node_rp_txt2img_gemini.py")
@@ -67,8 +66,7 @@ RPRatioParser            = _pp.RPRatioParser
 RPKSampler               = _ks.RPKSampler
 RPRegionalDetailer       = _det.RPRegionalDetailer
 RPRegionalDetailerZImage = _det_zi.RPRegionalDetailerZImage
-RPKSamplerZImage         = _ks_zi.RPKSamplerZImage
-RPKSamplerQwen           = _ks_qw.RPKSamplerQwen
+RPConverter              = _conv.RPConverter
 RPRegionalDetailerQwen   = _det_qw.RPRegionalDetailerQwen
 
 # For test compatibility
@@ -84,8 +82,7 @@ NODE_CLASS_MAPPINGS = {
     "RPKSampler":               RPKSampler,
     "RPRegionalDetailer":       RPRegionalDetailer,
     "RPRegionalDetailerZImage": RPRegionalDetailerZImage,
-    "RPKSamplerZImage":         RPKSamplerZImage,
-    "RPKSamplerQwen":           RPKSamplerQwen,
+    "RPConverter":             RPConverter,
     "RPRegionalDetailerQwen":   RPRegionalDetailerQwen,
     "RPTxt2ImgOpenAI":          _oai.RPTxt2ImgOpenAI,
     "RPTxt2ImgGemini":          _gem.RPTxt2ImgGemini,
@@ -95,11 +92,10 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     "RPPromptParser":           "RP Prompt Parser",
     "RPRatioParser":            "RP Ratio Parser",
-    "RPKSampler":               "RP KSampler",
-    "RPRegionalDetailer":       "RP Regional Detailer",
+    "RPKSampler":               "RP KSampler (SDXL)",
+    "RPRegionalDetailer":       "RP Regional Detailer (SDXL)",
     "RPRegionalDetailerZImage": "RP Regional Detailer (Z-Image)",
-    "RPKSamplerZImage":         "RP KSampler (Z-Image)",
-    "RPKSamplerQwen":           "RP KSampler (Qwen)",
+    "RPConverter":             "RP Converter",
     "RPRegionalDetailerQwen":   "RP Regional Detailer (Qwen)",
     "RPTxt2ImgOpenAI":          "RP Txt2Img (OpenAI)",
     "RPTxt2ImgGemini":          "RP Txt2Img (Gemini)",

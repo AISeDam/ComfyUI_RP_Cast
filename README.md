@@ -3,7 +3,7 @@
 Generate images with **different prompts per region** — left/right, top/bottom, or grid layouts.
 Supports SDXL, Z-Image, and Qwen models.
 
-**Version: 0.5.60** | [GitHub](https://github.com/AISeDam/ComfyUI_RP_Cast)
+**Version: 0.6.00** | [GitHub](https://github.com/AISeDam/ComfyUI_RP_Cast)
 
 ---
 
@@ -51,13 +51,19 @@ Restart ComfyUI — 8 nodes will appear automatically.
 | `RPPromptParser` | Write your multi-region prompt here. Splits it into regions automatically. |
 | `RPRatioParser` | Takes `divide_ratio`, `divide_mode`, and `threshold` as input. Outputs region data (`regional_col_n_row`) and threshold. Connect after RPPromptParser. |
 
-### Step 2 — Pick the sampler that matches your model
+### Step 2 — Pick the sampler and detailer that matches your model
 
-| Your model | Use this sampler | Use this detailer |
-|------------|-----------------|------------------|
-| SDXL / SD 1.x | `RPKSampler` | `RPRegionalDetailer` |
-| Z-Image | `RPKSamplerZImage` | `RPRegionalDetailerZImage` |
-| Qwen | `RPKSamplerQwen` | `RPRegionalDetailerQwen` |
+| Your model | Sampler | Detailer |
+|------------|---------|----------|
+| SDXL / SD 1.x | `RP KSampler (SDXL)` | `RP Regional Detailer (SDXL)` |
+| Z-Image / Qwen | *(use standard ComfyUI KSampler)* | `RP Regional Detailer (Z-Image)` |
+| Qwen | *(use standard ComfyUI KSampler)* | `RP Regional Detailer (Qwen)` |
+
+### Optional — RP Converter
+
+| Node | What it does |
+|------|--------------|
+| `RP Converter` | Converts a natural language scene description into an RP-structured prompt using a local Ollama LLM (`gemma3:12b` recommended). Splits input at COSPLAY/person keyword boundary, appends style keywords, and adds random LoRA tags per COL section. |
 
 ### Alternative — Generate via external API (no GPU needed)
 
@@ -111,65 +117,6 @@ RPPromptParser → RPRatioParser → RPKSampler
 
 ---
 
-## Z-Image — RPKSamplerZImage
-
-No `EmptyLatentImage` needed — set `width` and `height` directly on the node.
-
-> **Why one merged prompt?**
-> Z-Image uses a different attention architecture from SDXL.
-> SDXL's region-blending works by processing each region's prompt separately
-> per sampling step and blending the resulting latents (denoised callback).
-> Z-Image does not expose the per-step hooks needed for this,
-> so region-based latent blending cannot be applied.
-> Instead, all region prompts are merged into a single prompt
-> with natural language position labels
-> (e.g. `(character A) on the left side and (character B) on the right side`)
-> and sampled in **one pass**.
-
-| Widget | What to set |
-|--------|-------------|
-| `width` / `height` | Output image size (set directly on node) |
-| `steps` | Default: `8`. Z-Image Turbo works well with fewer steps. |
-| `cfg` | Default: `1.0`. Z-Image based models typically use `cfg=1.0`. |
-| `shift` | Z-Image noise schedule. Default: `3.0`. Recommended `3~6` for Z-Image Turbo. Higher = more noise in later steps. |
-
-**Basic connection:**
-
-```
-ZImageCheckpointLoader ────────────→ RPKSamplerZImage
-RPPromptParser → RPRatioParser ────→ RPKSamplerZImage
-```
-
----
-
-## Qwen — RPKSamplerQwen
-
-Same approach as Z-Image, but uses a narrative scene description instead of position labels.
-
-> **Why one merged prompt?**
-> Same reason as Qwen uses the same architecture — per-step region hooks are not available.
-> Qwen builds a scene narrative
-> (`(character A) on the left side and (character B) on the right side,
-> interacting naturally in the same scene, seamless composition`)
-> designed for **2-character scenes** where natural interaction matters.
-
-| Widget | What to set |
-|--------|-------------|
-| `width` / `height` | Output image size |
-| `steps` | Default: `20`. Recommended `15~20` steps for Qwen. |
-| `cfg` | Default: `1.0`. Recommended for Qwen based models. |
-| `shift` | Qwen noise schedule. Default: `3.0`. Start at `3~6`. |
-
-**Basic connection:**
-
-```
-QwenCheckpointLoader ──────────────→ RPKSamplerQwen
-RPPromptParser → RPRatioParser ────→ RPKSamplerQwen
-```
-
-
----
-
 ## Detailer nodes
 
 Run after the sampler to refine each detected person separately using inpainting.
@@ -177,40 +124,49 @@ Requires a YOLO model (e.g. `bbox/person_yolov8m-seg.pt`). The model list is aut
 
 | Node | For which model |
 |------|----------------|
-| `RPRegionalDetailer` | SDXL / SD1.x |
-| `RPRegionalDetailerZImage` | Z-Image |
-| `RPRegionalDetailerQwen` | Qwen |
+| `RP Regional Detailer (SDXL)` | SDXL / SD1.x |
+| `RP Regional Detailer (Z-Image)` | Z-Image / Qwen |
+| `RP Regional Detailer (Qwen)` | Qwen (delegates to Z-Image detailer) |
+
+**Fallback inpainting (all detailers)**
+
+When multiple persons are detected in the same region, the largest-area person is
+assigned to the COL region prompt. All remaining (displaced) persons are inpainted
+using the **base prompt** (`COMMON + BASE text`) so they still receive refinement.
 
 ### How each Detailer works
 
-**RPRegionalDetailer** (SDXL / SD1.x)
-
-1. Runs YOLO detection **independently per region** — each region mask is cropped
-   and YOLO is applied separately to select the largest person within that region.
-2. For each detected bbox: applies mask dilation + blur → upscales crop (LANCZOS)
-   → VAE encode → inpaints with the region's own prompt (COMMON + BASE + DIV combined)
-   → VAE decode → pastes back.
-3. Each region loads its own LoRA independently before inpainting — true per-region
-   LoRA isolation is fully achieved at this stage.
-
-**RPRegionalDetailerZImage** (Z-Image)
+**RP Regional Detailer (SDXL)**
 
 1. Runs YOLO on the **full image once**, then assigns each detected person to a region
-   by comparing the bbox center coordinate to the divide_ratio boundaries.
+   by comparing the **bbox center coordinate** to the divide_ratio boundaries (ZImage-style).
+   Supports Horizontal, Vertical, and 2D grid layouts.
+2. If multiple persons land in the same region, the largest-area person wins;
+   the rest are queued for fallback inpainting with the base prompt.
+3. For each assigned bbox: applies mask dilation + blur → upscales crop (LANCZOS)
+   → VAE encode → inpaints with the region's own prompt (COMMON + BASE + DIV combined)
+   → VAE decode → blends back with mask.
+4. Each region loads its own LoRA independently before inpainting —
+   true per-region LoRA isolation is fully achieved at the Detailer stage.
+
+**RP Regional Detailer (Z-Image)**
+
+1. Runs YOLO on the **full image once**, assigns persons to regions by bbox center
+   coordinate vs divide_ratio boundaries.
 2. Optionally runs **WD14 ONNX gender classification** (boy/girl score) per detected
-   bbox to select the best-matching region prompt automatically.
-3. Inpaints each bbox with a Z-Image latent (16-channel, auto-generated from crop size).
-   **Prompt encoding uses the same COMMON + BASE + DIV combination as RPRegionalDetailer**
-   — not the merged scene-narrative format used by RPKSamplerZImage.
-   Per-region LoRA isolation is identical to SDXL.
+   bbox to automatically select the best-matching region prompt.
+3. Inpaints each bbox with a Z-Image latent (16-channel, crop-size auto-generated).
+   Prompt encoding uses the same **COMMON + BASE + DIV** combination as the SDXL detailer
+   — not the merged scene-narrative format.
+   Per-region LoRA isolation is identical to the SDXL detailer.
+4. Displaced persons (not assigned to any COL) are inpainted with the base prompt.
 
-**RPRegionalDetailerQwen** (Qwen)
+**RP Regional Detailer (Qwen)**
 
-Delegates entirely to RPRegionalDetailerZImage with one structural difference:
+Delegates entirely to `RP Regional Detailer (Z-Image)` with one structural difference:
 Qwen's VAE may return a 5D tensor `[B, T, H, W, C]`, which is normalized to 4D
-`[B, H, W, C]` before being passed to RPRegionalDetailerZImage.
-Region prompts are passed through **as-is without any scene-narrative merging** —
-the same COMMON + BASE + DIV encoding used by RPRegionalDetailerZImage applies here too.
+`[B, H, W, C]` before being passed through.
+Region prompts use the same **COMMON + BASE + DIV** encoding — no scene-narrative merging.
 
 
 ---
@@ -290,6 +246,48 @@ Generates images using the [xAI Grok Image Generation API](https://docs.x.ai/dev
 ---
 
 ## Update History
+
+### v0.6.00 (2026-05-03)
+
+**Added**
+- `RP Converter` node: converts natural language scene descriptions to RP-structured prompts via Ollama LLM
+  - `style_prompt`: keywords appended between ADDCOMM and ADDBASE after Ollama conversion
+  - `lora_directory` + `lora_auto_apply`: auto-append random LoRA tags (with trigger words) per COL section (AGP-style)
+  - Ollama model list loaded at ComfyUI startup; retried at execute time if initially unavailable
+  - `gemma3:12b` recommended; `llama3.2:3b` and `qwen3` also supported (`qwen3` uses `/no_think` directive)
+  - Model unloaded from VRAM after conversion (`keep_alive=0`)
+  - WD14 tag-matching fallback when Ollama output is invalid (auto-downloaded if missing)
+  - 1-retry on invalid RP structure (missing or duplicate ADDCOMM/ADDBASE)
+  - `NL_prompts` STRING output added to `RPPromptParser` for direct CLIP encode use
+- `RPKSampler (SDXL)`: `steps_add_per_div` and `cfg_add_per_div` widgets added above `lora_weight_adj`
+  - Total steps = steps + (n_div × steps_add_per_div); total cfg = cfg + (n_div × cfg_add_per_div)
+- `RPRegionalDetailer` + `RPRegionalDetailerZImage`: fallback inpainting for displaced persons
+  - Persons not selected for any COL region are inpainted with base prompt (common + base_text)
+- `RPRegionalDetailer`: switched to ZImage-style single full-image YOLO pass with bbox-center region assignment
+  - Replaces per-region crop YOLO; supports Horizontal/Vertical and 2D grid layouts
+
+**Changed**
+- `RP KSampler` display name changed to `RP KSampler (SDXL)`
+- `RP Regional Detailer` display name changed to `RP Regional Detailer (SDXL)`
+- `RPRegionalDetailer`: region assignment now uses bbox center coordinate vs divide_ratio boundaries (ZImage pattern)
+
+**Removed**
+- `RP KSampler (Z-Image)` node removed (use `RPRegionalDetailerZImage` + standard KSampler instead)
+- `RP KSampler (Qwen)` node removed
+- `RP KSampler (FLUX.2)` node removed
+- Deprecated stub files removed: `node_rp_conditioning.py`, `node_rp_filter_maker.py`, `node_rp_ratio_parser.py`
+
+- `RP Converter`: switched default model to `gemma3:12b` (superior instruction following vs llama3.2:3b)
+- `RP Converter`: System Prompt restructured for `gemma3` — PART A / PART B explicit split format with EXAMPLE
+- `RP Converter`: User Prompt now pre-splits input at COSPLAY/person keyword boundary in Python before passing to model, eliminating cross-section tag contamination
+- `RP Converter`: `think: false` applied to all models in both streaming and non-streaming payloads
+- `RP Converter`: `qwen3` models additionally receive `/no_think` directive prefix in User Prompt for double assurance
+- `RP Converter`: `context: []` added to all API payloads — conversation history cleared on every request to prevent prompt leakage from prior runs
+- `RP Converter`: retry validation extended to detect duplicate `ADDCOMM` / `ADDBASE` keywords (in addition to missing ones)
+- `RP Converter`: retry hint message now explicitly states "ADDCOMM must appear EXACTLY ONCE / ADDBASE must appear EXACTLY ONCE"
+- `RP Converter`: `_WD14_TAG_SET = None` module-level declaration added (fixes `NameError` on WD14 fallback path)
+- `RPKSampler (SDXL)`: `steps_add_per_div` / `cfg_add_per_div` default value set to `0` (no-op when unused)
+- `RPRegionalDetailer (SDXL)` / `RPRegionalDetailerZImage`: fallback inpainting now uses full crop→upscale→VAE encode→sample→blend pipeline (same as main COL loop) instead of simplified path
 
 ### v0.5.60 (2026-04-30)
 
